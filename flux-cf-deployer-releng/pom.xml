@@ -12,13 +12,13 @@
 		<groupId>org.eclipse.flux</groupId>
 		<artifactId>org.eclipse.flux.parent.java</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
-		<relativePath>../org.eclipse.flux.parent.java/pom.xml</relativePath>
+		<relativePath>../../flux/org.eclipse.flux.parent.java/pom.xml</relativePath>
 	</parent>
 
 	<modules>
 		<module>../flux-cf-deployer</module>
 		<module>../flux-cf-deployer-service</module>
-		<module>../org.eclipse.flux.client.java</module>
+		<module>../../flux/org.eclipse.flux.client.java</module>
 	</modules>
 
 </project>

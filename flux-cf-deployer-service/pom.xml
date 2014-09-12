@@ -8,7 +8,7 @@
 		<groupId>org.eclipse.flux</groupId>
 		<artifactId>org.eclipse.flux.parent.java</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
-		<relativePath>../org.eclipse.flux.parent.java/pom.xml</relativePath>
+		<relativePath>../../flux/org.eclipse.flux.parent.java/pom.xml</relativePath>
 	</parent>
 
 	<dependencies>
