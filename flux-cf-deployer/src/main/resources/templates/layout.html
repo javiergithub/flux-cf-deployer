@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	  xmlns:social="http://spring.io/springsocial"
+	  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+	<head>
+		<title>Flux Deployer</title>
+	    <link href="https://fonts.googleapis.com/css?family=Varela+Round|Montserrat:400,700" rel="stylesheet" type="text/css"/>
+	    <link rel="stylesheet" href="/css/bootstrap.min.css"/>
+	    <link rel="stylesheet" href="/css/bootstrap-theme.min.css"/>
+	    <link rel="stylesheet" href="/css/spring.css"/>
+	    <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.png"/>
+	    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+	</head>
+	<body>
+	<div class="container-fluid">
+		<div class="row">
+ 			<div id="initializr-header">
+				<div class="container">
+					<h1>Flux Deployer</h1>
+					<p>Deploy your Flux project now.</p>
+				</div>
+ 			</div>
+ 		</div>
+		
+		<div id="leftNav">
+			<h4><a th:href="@{/flux}">Flux</a></h4>
+<!-- 			<div social:connected="flux">
+				<ul class="menu">
+					<li><a th:href="@{/flux}">User Profile</a></li>
+					<li><a th:href="@{/flux/projects}">Projects</a></li>
+				</ul>
+			</div> -->
+			<h4><a th:href="@{/cloudfoundry}">Cloud Foundry</a></h4>
+			<h4><a th:href="@{/cloudfoundry/deploy}">Deploy</a></h4>
+		</div>
+		
+		<div id="content" layout:fragment="content">
+			Content goes here
+		</div>
+	</div>
+	</body>
+</html>

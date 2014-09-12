@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	  xmlns:social="http://spring.io/springsocial"
+	  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+	<head>
+		<title>Flux Deployer</title>
+	    <link href="https://fonts.googleapis.com/css?family=Varela+Round|Montserrat:400,700" rel="stylesheet" type="text/css"/>
+	    <link rel="stylesheet" href="/css/bootstrap.min.css"/>
+	    <link rel="stylesheet" href="/css/bootstrap-theme.min.css"/>
+	    <link rel="stylesheet" href="/css/spring.css"/>
+	    <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.png"/>
+	    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+		<script th:inline="javascript">
+			var cfSpace = [[${space}]];
+			var cfOrg = [[${org}]];
+			var cfApp = [[${app}]];
+			var fluxUser = [[${fluxUser}]];
+			var fluxHost = [[${fluxHost}]];
+			console.log("space = "+cfSpace);
+			console.log("app   = "+cfApp);
+		</script>
+		<script data-main="/scripts/app-log" src="/scripts/requirejs/require.js"></script>
+	</head>
+	<body>
+	<div class="container-fluid">
+		<div class="row">
+			<div id="header" class="initializr-header">
+				<div class="container">
+					<h1>Flux Deployer</h1>
+					<p>Deploy your Flux project now.</p>
+				</div>
+ 			</div>
+ 		</div>
+		
+		<div id="content" layout:fragment="content">
+			<h3>Cloud Foundry App Log</h3>
+			
+			<dl>
+				<dt>Org</dt>
+					<dd th:text="${org}">AcmeInc</dd>
+				<dt>Space</dt>
+					<dd th:text="${space}">dingbats</dd>
+				<dt>App</dt>
+					<dd th:text="${app}">hammer-scroll</dd>
+			</dl>
+			
+			<div class="cfAppLog">
+				The log text should...
+				go in here...
+			</div>
+		</div>
+	</div>
+	</body>
+</html>

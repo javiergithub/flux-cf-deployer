@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	  xmlns:social="http://spring.io/springsocial"
+	  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+	<head>
+		<title>Flux Deployer</title>
+	    <link href="https://fonts.googleapis.com/css?family=Varela+Round|Montserrat:400,700" rel="stylesheet" type="text/css"/>
+	    <link rel="stylesheet" href="/css/bootstrap.min.css"/>
+	    <link rel="stylesheet" href="/css/bootstrap-theme.min.css"/>
+	    <link rel="stylesheet" href="/css/spring.css"/>
+	    <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.png"/>
+	    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+	</head>
+	<body>
+	<div class="container-fluid">
+		<div class="row">
+			<div id="header" class="initializr-header">
+				<div class="container">
+					<h1>Flux Deployer</h1>
+					<p>Deploy your Flux project now.</p>
+				</div>
+ 			</div>
+ 		</div>
+		
+		<div id="content" layout:fragment="content">
+		
+			<h3>Sign In</h3>
+
+			<!-- GITHUB SIGNIN to flux APIs -->
+			<form id="gh_signin" th:action="@{/signin/flux}" method="POST">
+				<input type="hidden" name="_csrf" th:value="${_csrf.token}"></input>
+				<button type="submit">Sign In with GitHub</button>
+			</form>
+		</div>
+	</div>
+	</body>
+</html>

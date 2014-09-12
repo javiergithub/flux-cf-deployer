@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	  xmlns:social="http://spring.io/springsocial"
+	  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+	<head>
+		<title>Flux Deployer</title>
+	    <link href="https://fonts.googleapis.com/css?family=Varela+Round|Montserrat:400,700" rel="stylesheet" type="text/css"/>
+	    <link rel="stylesheet" href="/css/bootstrap.min.css"/>
+	    <link rel="stylesheet" href="/css/bootstrap-theme.min.css"/>
+	    <link rel="stylesheet" href="/css/spring.css"/>
+	    <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.png"/>
+	    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+	</head>
+	<body>
+	<div class="container-fluid">
+		<div class="row">
+			<div id="header" class="initializr-header">
+				<div class="container">
+					<h1>Flux Deployer</h1>
+					<p>Deploy your Flux project now.</p>
+				</div>
+ 			</div>
+ 		</div>
+		
+		<div id="content" layout:fragment="content">
+			<h1>Connected to CloudFoundry</h1>
+			
+			<dl>
+				<dt>Email</dt>
+					<dd th:text="${user}"></dd>
+			</dl>
+			
+			<div class="error" th:if="${error_message}" th:text="${error_message}"></div>
+			<div class="info" th:if="${info_message}" th:text="${info_message}"></div>
+
+ 			<form class="form-horizontal" action="deploy.do" method="post">
+				<input type="hidden" name="_csrf" th:value="${_csrf.token}" />
+				<div>
+					<div class="form-group">
+						<label for="project" class="col-md-3 control-label">Project</label>
+						<div class="col-md-8">
+							<select name="project">
+								<option th:each="project : ${projects}" th:value="${project}" th:text="${project}"/>
+							</select>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="space" class="col-md-3 control-label">Space</label>
+						<div class="col-md-8">
+							<select name="space">
+								<option th:each="sp : ${spaces}" th:value="${sp}" th:text="${sp}" th:selected="${defaultSpace == sp}"/>
+							</select>
+						</div>
+					</div>
+				</div>
+				<input type="submit" value="Push to Cloud Foundry"/>
+			</form>
+<!-- 				
+			<table>
+				<tr>
+					<th>Flux Project</th>
+					<th>CF Space</th>
+					<th>Synch</th>
+				</tr>
+				
+				<tr th:each="dep : ${deployments}">
+					<td><a href="edit" th:href="@{'deploy/' + ${dep.fluxProjectName}}" th:text="${dep.fluxProjectName}"></a></td>
+					<td th:if="${dep.cfSpace}" th:text="${dep.cfSpace}"></td>
+					<td th:unless="${dep.cfSpace}">Not set</td>
+					<td>
+						<input class="checkbox" type="checkbox" disabled="disabled" th:checked="${dep.activated}" />
+					</td>
+				</tr>
+			</table>
+ -->
+		</div>
+	</div>
+	</body>
+</html>

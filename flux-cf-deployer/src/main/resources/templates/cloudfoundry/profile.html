@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	  xmlns:social="http://spring.io/springsocial"
+	  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+	<head>
+		<title>Flux Deployer</title>
+	    <link href="https://fonts.googleapis.com/css?family=Varela+Round|Montserrat:400,700" rel="stylesheet" type="text/css">
+	    <link rel="stylesheet" href="/css/bootstrap.min.css"/>
+	    <link rel="stylesheet" href="/css/bootstrap-theme.min.css"/>
+	    <link rel="stylesheet" href="/css/spring.css"/>
+	    <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.png"/>
+	    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+	</head>
+	<body>
+		<div id="header">
+			<h1>Flux Deployer</h1>
+			<p>Deploy your Flux project now.</p>
+		</div>
+		
+		<div id="leftNav">
+			Left nav menu
+		</div>
+		
+		<div id="content" layout:fragment="content">
+			<h1>Connected to CloudFoundry</h1>
+
+			<div class="error" th:each="error_message : ${param.error_message}" th:text="${error_message}">
+			</div>
+			
+			<dl>
+				<dt>Email</dt>
+					<dd th:text="${user}"></dd>
+			</dl>
+					
+			<p>Spaces:</p>
+			<ul>
+				<li th:each="sp : ${spaces}" th:text="${sp}"></li>
+			</ul>
+		</div>
+	</body>
+</html>
