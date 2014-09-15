@@ -37,7 +37,7 @@ public class CloudFoundryClientDelegate {
 
 	private final MessageConnector connector;
 
-	private final Map<String, StreamingLogToken> activeApplicationLogs = new HashMap<String, StreamingLogToken>();
+	private final Map<String, DeployedApplicationLogListener> activeApplicationLogs = new HashMap<>();
 
 	public CloudFoundryClientDelegate(String fluxUser, String cfUser,
 			String password, URL cloudControllerUrl, String space,
@@ -72,7 +72,7 @@ public class CloudFoundryClientDelegate {
 	public synchronized void login(String cfUser, String password) {
 		this.cfUser = cfUser;
 		this.password = password;
-		this.client = null; //guarantees this delegate is not usuable anymore if (re)login fails.
+		this.client = null; //guarantees this delegate is not usable anymore if (re)login fails.
 		this.client = createClient(cfUser, password, cloudControllerUrl, orgSpace);
 	}
 
@@ -154,8 +154,10 @@ public class CloudFoundryClientDelegate {
 				"Uploading application resources") {
 
 			protected Void doRun(CloudFoundryClient client) throws Exception {
-				addLogListener(getAppName());
-				client.uploadApplication(getAppName(), location);
+				String appName = getAppName();
+				removeLogListener(appName);
+				addLogListener(appName);
+				client.uploadApplication(appName, location);
 				return null;
 			}
 
@@ -181,22 +183,21 @@ public class CloudFoundryClientDelegate {
 		if (appName != null && !activeApplicationLogs.containsKey(appName)) {
 			handleMessage(DEPLOYMENT_SERVICE_LABEL
 					+ " - Initialising Loggregator support for - " + appName
-					+ '\n', MessageConstants.CF_STREAM_STDOUT, appName);
-			StreamingLogToken logToken = this.client.streamLogs(appName,
-					new DeployedApplicationLogListener(appName));
-			if (logToken != null) {
-				activeApplicationLogs.put(appName, logToken);
+					+ '\n', MessageConstants.CF_STREAM_SERVICE_OUT, appName);
+			DeployedApplicationLogListener logListener = new DeployedApplicationLogListener(appName);
+			if (logListener != null) {
+				activeApplicationLogs.put(appName, logListener);
 			}
 		}
 	}
 
 	protected void removeLogListener(String appName) {
-		StreamingLogToken token = activeApplicationLogs.remove(appName);
-		if (token != null) {
+		DeployedApplicationLogListener logHandler = activeApplicationLogs.remove(appName);
+		if (logHandler != null) {
 			handleMessage(DEPLOYMENT_SERVICE_LABEL
 					+ " - Removing Loggregator support for - " + appName
-					+ '\n', MessageConstants.CF_STREAM_STDOUT, appName);
-			token.cancel();
+					+ '\n', MessageConstants.CF_STREAM_SERVICE_OUT, appName);
+			logHandler.dispose();
 		}
 	}
 
@@ -323,9 +324,23 @@ public class CloudFoundryClientDelegate {
 	class DeployedApplicationLogListener implements ApplicationLogListener {
 
 		private final String appName;
+		private StreamingLogToken logToken;
 
 		public DeployedApplicationLogListener(String appName) {
 			this.appName = appName;
+			this.logToken = CloudFoundryClientDelegate.this.client.streamLogs(appName, this);
+		}
+
+		public void dispose() {
+			StreamingLogToken token = logToken;
+			if (token!=null) {
+				token.cancel();
+				this.logToken = null;
+			}
+		}
+		
+		private boolean isDisposed() {
+			return logToken==null;
 		}
 
 		public void onComplete() {
@@ -337,7 +352,7 @@ public class CloudFoundryClientDelegate {
 		}
 
 		public void onMessage(ApplicationLog log) {
-			if (log != null) {
+			if (log != null && !isDisposed()) {
 				org.cloudfoundry.client.lib.domain.ApplicationLog.MessageType type = log
 						.getMessageType();
 				String streamType = null;
@@ -416,7 +431,7 @@ public class CloudFoundryClientDelegate {
 
 		protected void logMessage(String message) {
 			CloudFoundryClientDelegate.this.handleMessage(message + '\n',
-					MessageConstants.CF_STREAM_STDOUT, getAppName());
+					MessageConstants.CF_STREAM_SERVICE_OUT, getAppName());
 		}
 	}
 
