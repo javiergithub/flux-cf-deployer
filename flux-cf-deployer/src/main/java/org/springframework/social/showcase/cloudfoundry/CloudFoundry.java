@@ -40,7 +40,7 @@ public class CloudFoundry {
 		this.cloudControllerUrl = new URI(cloudControllerUrl).toURL();
 	}
 
-	public boolean login(String login, String password, String space) {
+	public void login(String login, String password, String space) throws Exception {
 		try {
 			JSONObject msg = new JSONObject()
 				.put(USERNAME, flux.getUser())
@@ -65,11 +65,13 @@ public class CloudFoundry {
 			this.user = login;
 			this.password = password;
 			this.space = space;
-			return loggedIn;
 		} catch (Throwable e) {
-			e.printStackTrace();
 			logout();
-			return false;
+			if (e instanceof Exception) {
+				throw (Exception)e;
+			} else {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
@@ -143,32 +145,40 @@ public class CloudFoundry {
 	/**
 	 * Send out a message on flux bus alerting interested parties that a project deployment config has changed.
 	 */
-	public void push(DeploymentConfig config) {
-		try {
-			flux.send(MessageConstants.CF_PUSH_REQUEST,  new JSONObject()
-				.put(USERNAME, flux.getUser())
-				.put(CF_SPACE, config.getCfSpace())
-				.put(PROJECT_NAME, config.getFluxProjectName())
-			);
-		} catch (JSONException e) {
-			e.printStackTrace();
-		}
+	public void push(DeploymentConfig config) throws Exception {
+		SingleResponseHandler<Void> response = new SingleResponseHandler<Void>(flux, MessageConstants.CF_PUSH_RESPONSE, flux.getUser()) {
+			@Override
+			protected Void parse(JSONObject message) throws Exception {
+				return null;
+			}
+		};
+		flux.send(MessageConstants.CF_PUSH_REQUEST,  new JSONObject()
+			.put(USERNAME, flux.getUser())
+			.put(CF_SPACE, config.getCfSpace())
+			.put(PROJECT_NAME, config.getFluxProjectName())
+		);
+		//response.getFuture().whenDone(runnable);
 	}
 
 	public String getSpace() {
 		return space;
 	}
 
-	public void setSpace(String space) {
-		this.space = space;
+	public void setSpace(String space) throws Exception {
 		if (loggedIn) {
 			login(this.user, this.password, this.space);
+		} else {
+			throw new IllegalStateException("Not logged in");
 		}
 	}
 
 	public void deploymentChanged(DeploymentConfig config) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	public boolean isLoggedIn() {
+		return loggedIn;
 	}
 
 

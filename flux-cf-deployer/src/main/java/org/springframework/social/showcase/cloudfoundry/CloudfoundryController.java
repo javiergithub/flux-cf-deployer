@@ -14,9 +14,11 @@ import java.net.URLEncoder;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 import javax.inject.Inject;
 
+import org.eclipse.flux.client.util.ExceptionUtil;
 import org.springframework.core.env.Environment;
 import org.springframework.social.connect.Connection;
 import org.springframework.social.connect.ConnectionRepository;
@@ -46,7 +48,7 @@ public class CloudfoundryController {
 	@RequestMapping("/cloudfoundry/deploy")
 	public String deploy(Principal currentUser, Model model) throws Exception {
 		CloudFoundry cf = cfm.getConnection(currentUser);
-		if (cf==null) {
+		if (!isLoggedIn(cf)) {
 			return "redirect:/cloudfoundry/login";
 		}
 		Flux flux = flux();
@@ -77,26 +79,38 @@ public class CloudfoundryController {
 		return "cloudfoundry/deploy";
 	}
 
+	private boolean isLoggedIn(CloudFoundry cf) {
+		return cf!=null && cf.isLoggedIn();
+	}
+
 	@RequestMapping(value="/cloudfoundry/deploy.do", method=RequestMethod.POST)
 	public String deployDo(Principal currentUser, 
 			@RequestParam("project") String project,
 			@RequestParam("space") String space,
 			Model model) throws Exception {
-		CloudFoundry cf = cfm.getConnection(currentUser);
-		if (cf==null) {
-			return "redirect:/cloudfoundry/login";
+		try {
+			CloudFoundry cf = cfm.getConnection(currentUser);
+			if (!isLoggedIn(cf)) {
+				return "redirect:/cloudfoundry/login";
+			}
+			Flux flux = flux();
+			if (flux==null) {
+				return "redirect:/singin/flux";
+			}
+			DeploymentConfig dep = new DeploymentConfig(project);
+			dep.setCfSpace(space);
+			cf.setSpace(space); //use this as default space from now on
+			cf.push(dep);
+			return "redirect:/cloudfoundry/app-log"
+				+"?space="+URLEncoder.encode(space, "UTF-8")
+				+"&project="+URLEncoder.encode(project, "UTF-8");
+		} catch (Throwable e) {
+			e.printStackTrace();
+			//Broken cfdeployer service state, or service died. If the service is still there
+			// it likely has not been properly logged in for this user so redirect user to login page
+			// and show error message there.
+			return "redirect:/cloudfoundry/login?error="+URLEncoder.encode(errorMessage(e), "UTF8");
 		}
-		Flux flux = flux();
-		if (flux==null) {
-			return "redirect:/singin/flux";
-		}
-		DeploymentConfig dep = new DeploymentConfig(project);
-		dep.setCfSpace(space);
-		cf.setSpace(space); //use this as default space from now on
-		cf.push(dep);
-		return "redirect:/cloudfoundry/app-log"
-			+"?space="+URLEncoder.encode(space, "UTF-8")
-			+"&project="+URLEncoder.encode(project, "UTF-8");
 	}
 	
 	private Flux flux() {
@@ -110,7 +124,7 @@ public class CloudfoundryController {
 	@RequestMapping(value="/cloudfoundry")
 	public String profile(Principal currentUser, Model model) {
 		CloudFoundry cf = cfm.getConnection(currentUser);
-		if (cf==null) {
+		if (!isLoggedIn(cf)) {
 			return "redirect:/cloudfoundry/login";
 		}
 		model.addAttribute("space", cf.getSpace());
@@ -118,18 +132,6 @@ public class CloudfoundryController {
 		model.addAttribute("spaces", cf.getSpaces());
 		return "cloudfoundry";
 	}
-	
-	@RequestMapping(value="/cloudfoundry/save_profile")
-	public String saveprofile(Principal currentUser, Model model, @RequestParam("space") String setSpace) {
-		CloudFoundry cf = cfm.getConnection(currentUser);
-		if (cf==null) {
-			return "redirect:/cloudfoundry/login";
-		}
-		cf.setSpace(setSpace);
-		
-		return "redirect:/cloudfoundry";
-	}
-	
 	
 	@RequestMapping(value="/cloudfoundry/processLogin")
 	public String doLogin(Principal currentUser, Model model,
@@ -141,14 +143,24 @@ public class CloudfoundryController {
 		CloudFoundry cf = new CloudFoundry(
 				flux.getApi().getMessagingConnector(),
 				env.getProperty("cloudfoundry.url", "https://api.run.pivotal.io/"));
-		if (cf.login(login, password, null)) {
+		try {
+			cf.login(login, password, null);
 			cfm.putConnection(currentUser, cf);
 			return "redirect:/cloudfoundry/deploy";
-		} else {
-			return "redirect:/cloudfoundry/login?error=bad_credentials";
+		} catch (Throwable e) {
+			return "redirect:/cloudfoundry/login?error="+URLEncoder.encode(errorMessage(e), "UTF8");
 		}
 	}
 	
+	private String errorMessage(Throwable e) {
+		e = ExceptionUtil.getDeepestCause(e);
+		if (e instanceof TimeoutException) {
+			return "CloudFoundry deployment service is not responding";
+		} else {
+			return ExceptionUtil.getMessage(e);
+		}
+	}
+
 	@RequestMapping("/cloudfoundry/login")
 	public String login() {
 		return "cloudfoundry/login";

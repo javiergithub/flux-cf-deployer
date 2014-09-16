@@ -76,39 +76,35 @@ public class CloudFoundryClientDelegate {
 		this.client = createClient(cfUser, password, cloudControllerUrl, orgSpace);
 	}
 
-	public synchronized void push(String appName, File location) {
+	public synchronized void push(String appName, File location) throws Exception {
 		CloudFoundryClient client = this.client;
 		final CloudFoundryApplication localApp = new CloudFoundryApplication(
 				appName, location, client);
 
 		String deploymentName = localApp.getName();
 
-		try {
-			new ApplicationOperation<Void>(deploymentName,
-					"Pushing application") {
+		new ApplicationOperation<Void>(deploymentName,
+				"Pushing application") {
 
-				@Override
-				protected Void doRun(CloudFoundryClient client)
-						throws Exception {
+			@Override
+			protected Void doRun(CloudFoundryClient client)
+					throws Exception {
 
-					CloudApplication existingApp = getExistingApplication(getAppName());
+				CloudApplication existingApp = getExistingApplication(getAppName());
 
-					if (existingApp == null) {
-						create(localApp);
+				if (existingApp == null) {
+					create(localApp);
 
-					} else {
-						stopApplication(existingApp);
-					}
-
-					upload(localApp);
-					start(localApp);
-
-					return null;
+				} else {
+					stopApplication(existingApp);
 				}
-			}.run(client);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+
+				upload(localApp);
+				start(localApp);
+
+				return null;
+			}
+		}.run(client);
 
 	}
 
@@ -423,7 +419,7 @@ public class CloudFoundryClientDelegate {
 
 		protected void onError(Throwable t) {
 
-		};
+		}; 
 
 		protected void logError(Throwable error, String message) {
 			handleError(error, message, getAppName());
@@ -433,6 +429,13 @@ public class CloudFoundryClientDelegate {
 			CloudFoundryClientDelegate.this.handleMessage(message + '\n',
 					MessageConstants.CF_STREAM_SERVICE_OUT, getAppName());
 		}
+	}
+
+	/**
+	 * Sends a message to the log associated with given appName
+	 */
+	public void logMessage(String message, String appName) {
+		handleMessage(DEPLOYMENT_SERVICE_LABEL + " - " + message, MessageConstants.CF_STREAM_SERVICE_OUT, appName);
 	}
 
 }

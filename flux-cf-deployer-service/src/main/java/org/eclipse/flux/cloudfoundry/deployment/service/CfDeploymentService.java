@@ -117,16 +117,35 @@ public class CfDeploymentService {
 				final String username = req.getString(USERNAME);
 				final String projectName = req.getString(PROJECT_NAME);
 				final String space = req.getString(CF_SPACE);
-				DownloadProject downloader = new DownloadProject(flux, projectName, username);
-				downloader.run(new DownloadProject.CompletionCallback() {
-					@Override
-					public void downloadFailed() {
-						System.err.println("download project failed");
-					}
-					@Override
-					public void downloadComplete(File project) {
-						CloudFoundryClientDelegate cfClient = getCfClient(username, space);
-						cfClient.push(projectName, project);
+				final CloudFoundryClientDelegate cfClient = getCfClient(username, space);
+				if (cfClient==null) {
+					return errorResponse(req, new IllegalStateException("User '"+username+"' not logged into Cloud Foundry"));
+				}
+				FluxClient.executor.execute(new Runnable() {
+					public void run() {
+						//From here on down work is lenghty and gets done async with any errors sent to the
+						// application log (via flux messages).
+						DownloadProject downloader = new DownloadProject(flux, projectName, username);
+						cfClient.logMessage("Fetching project '"+projectName+"' from Flux...", projectName);
+						downloader.run(new DownloadProject.CompletionCallback() {
+							@Override
+							public void downloadFailed() {
+								cfClient.handleError(null, "Fetching project '"+projectName+"' failed", projectName);
+								System.err.println("download project failed");
+							}
+							@Override
+							public void downloadComplete(File project) {
+								try {
+									cfClient.logMessage("Fetching project '"+projectName+"' from Flux - completed", projectName);
+									CloudFoundryClientDelegate cfClient = getCfClient(username, space);
+									cfClient.push(projectName, project);
+								} catch (Throwable e) {
+									//Not sending to cfClient logs because we assume that it is itself responsible for
+									// doing that for errors produced within any operations it executes.
+									e.printStackTrace();
+								}
+							}
+						});
 					}
 				});
 				return res;
@@ -144,13 +163,4 @@ public class CfDeploymentService {
 			flux.disconnect();
 		}
 	}
-	
-	private boolean equal(String s1, String s2) {
-		if (s1 == null) {
-			return s1 == s2;
-		} else {
-			return s1.equals(s2);
-		}
-	}
-	
 }

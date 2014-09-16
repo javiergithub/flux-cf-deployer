@@ -31,9 +31,7 @@
 				<h3>CloudFoundry Sing In</h3>
 				
 				<div class="formInfo">
-					<div class="error" th:if="${param.error !=null}">
-						Your cloudfoundry credentials where incorrect.
-						Please try again.
+					<div class="error" th:if="${param.error !=null}" th:text="${param.error[0]}">
 					</div>
 				</div>
 

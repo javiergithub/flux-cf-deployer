@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.flux.client.CallbackIDAwareMessageHandler;
 import org.eclipse.flux.client.MessageConnector;
+import org.eclipse.flux.client.util.BasicFuture;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -197,23 +198,21 @@ public class DownloadProject {
 		}
 	}
 
-// doens't quite work, creates a deadlock of sorts when called in a message handler. This because that stops sock.io from receiving
-//  responses. Should be able to solve this by executing something on a different thread.
-//	public static File download(MessageConnector flux, final String projectName, final String username) throws Exception {
-//		DownloadProject download = new DownloadProject(flux, projectName, username);
-//		final BasicFuture<File> future = new BasicFuture<File>();
-//		download.run(new CompletionCallback() {
-//			@Override
-//			public void downloadFailed() {
-//				future.reject(new IOException("Downloading of project '"+username+"/"+projectName+"' failed"));
-//			}
-//			
-//			@Override
-//			public void downloadComplete(File project) {
-//				future.resolve(project);
-//			}
-//		});
-//		return future.get();
-//	}
+	public static File download(MessageConnector flux, final String projectName, final String username) throws Exception {
+		DownloadProject download = new DownloadProject(flux, projectName, username);
+		final BasicFuture<File> future = new BasicFuture<File>();
+		download.run(new CompletionCallback() {
+			@Override
+			public void downloadFailed() {
+				future.reject(new IOException("Downloading of project '"+username+"/"+projectName+"' failed"));
+			}
+			
+			@Override
+			public void downloadComplete(File project) {
+				future.resolve(project);
+			}
+		});
+		return future.get();
+	}
 
 }

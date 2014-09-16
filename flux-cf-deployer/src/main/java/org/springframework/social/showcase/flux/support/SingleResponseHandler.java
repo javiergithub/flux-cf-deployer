@@ -14,6 +14,7 @@ import static org.eclipse.flux.client.MessageConstants.ERROR;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.flux.client.IMessageHandler;
@@ -47,7 +48,7 @@ public abstract class SingleResponseHandler<T> implements IMessageHandler {
 	/**
 	 * Positive timeout in milliseconds. Negative number or 0 means 'infinite'.
 	 */
-	private static final long TIME_OUT = 60 * 1000; //quite long for now, for debugging purposes 
+	private static final long TIME_OUT = 30 * 1000; //quite long for now, for debugging purposes 
 	
 	private static Timer timer;
 	
@@ -147,6 +148,10 @@ public abstract class SingleResponseHandler<T> implements IMessageHandler {
 			}, TIME_OUT);
 		}
 		return future.get();
+	}
+
+	public BasicFuture<T> getFuture() {
+		return future;
 	}
 
 }
