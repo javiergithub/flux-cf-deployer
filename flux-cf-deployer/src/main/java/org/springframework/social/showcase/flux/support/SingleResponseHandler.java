@@ -16,6 +16,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.flux.client.IMessageHandler;
 import org.eclipse.flux.client.MessageConnector;
@@ -61,6 +62,8 @@ public abstract class SingleResponseHandler<T> implements IMessageHandler {
 		}
 		return timer;
 	}
+	
+	private AtomicBoolean timeoutStarted = new AtomicBoolean(false);
 	
 	private MessageConnector conn;
 	private String messageType;
@@ -134,7 +137,11 @@ public abstract class SingleResponseHandler<T> implements IMessageHandler {
 	 * Block while waiting for the response. Returns the result once its been received.
 	 */
 	public T awaitResult() throws Exception {
-		if (!future.isDone() && TIME_OUT>0) {
+		return getFuture().get();
+	}
+
+	private void ensureTimeout() {
+		if (!future.isDone() && TIME_OUT>0 && timeoutStarted.compareAndSet(false, true)) {
 			timer().schedule(new TimerTask() {
 				@Override
 				public void run() {
@@ -147,10 +154,10 @@ public abstract class SingleResponseHandler<T> implements IMessageHandler {
 				}
 			}, TIME_OUT);
 		}
-		return future.get();
 	}
 
 	public BasicFuture<T> getFuture() {
+		ensureTimeout();
 		return future;
 	}
 

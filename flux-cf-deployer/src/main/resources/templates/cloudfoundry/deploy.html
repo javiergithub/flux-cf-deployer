@@ -25,17 +25,17 @@
 		<div id="content" layout:fragment="content">
 			<h1>Connected to CloudFoundry</h1>
 			
-			<dl>
-				<dt>Email</dt>
-					<dd th:text="${user}"></dd>
-			</dl>
-			
 			<div class="error" th:if="${error_message}" th:text="${error_message}"></div>
 			<div class="info" th:if="${info_message}" th:text="${info_message}"></div>
 
  			<form class="form-horizontal" action="deploy.do" method="post">
 				<input type="hidden" name="_csrf" th:value="${_csrf.token}" />
 				<div>
+					<div class="form-group">
+						<label class="col-md-3 control-label">Email</label>
+						<div class="col-md-8" th:text="${user}">
+						</div>
+					</div>
 					<div class="form-group">
 						<label for="project" class="col-md-3 control-label">Project</label>
 						<div class="col-md-8">

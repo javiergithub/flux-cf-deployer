@@ -10,7 +10,24 @@
 *******************************************************************************/
 package org.springframework.social.showcase.cloudfoundry;
 
-import static org.eclipse.flux.client.MessageConstants.*;
+import static org.eclipse.flux.client.MessageConstants.CF_APP;
+import static org.eclipse.flux.client.MessageConstants.CF_APP_LOG;
+import static org.eclipse.flux.client.MessageConstants.CF_CONTROLLER_URL;
+import static org.eclipse.flux.client.MessageConstants.CF_LOGIN_REQUEST;
+import static org.eclipse.flux.client.MessageConstants.CF_LOGIN_RESPONSE;
+import static org.eclipse.flux.client.MessageConstants.CF_MESSAGE;
+import static org.eclipse.flux.client.MessageConstants.CF_ORG;
+import static org.eclipse.flux.client.MessageConstants.CF_PASSWORD;
+import static org.eclipse.flux.client.MessageConstants.CF_SPACE;
+import static org.eclipse.flux.client.MessageConstants.CF_SPACES;
+import static org.eclipse.flux.client.MessageConstants.CF_SPACES_REQUEST;
+import static org.eclipse.flux.client.MessageConstants.CF_SPACES_RESPONSE;
+import static org.eclipse.flux.client.MessageConstants.CF_STREAM;
+import static org.eclipse.flux.client.MessageConstants.CF_STREAM_CLIENT_ERROR;
+import static org.eclipse.flux.client.MessageConstants.CF_USERNAME;
+import static org.eclipse.flux.client.MessageConstants.OK;
+import static org.eclipse.flux.client.MessageConstants.PROJECT_NAME;
+import static org.eclipse.flux.client.MessageConstants.USERNAME;
 
 import java.io.IOException;
 import java.net.URI;
@@ -18,6 +35,7 @@ import java.net.URL;
 
 import org.eclipse.flux.client.MessageConnector;
 import org.eclipse.flux.client.MessageConstants;
+import org.eclipse.flux.client.util.CompletionAdapter;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -142,10 +160,7 @@ public class CloudFoundry {
 		deployment.configure(config);
 	}
 
-	/**
-	 * Send out a message on flux bus alerting interested parties that a project deployment config has changed.
-	 */
-	public void push(DeploymentConfig config) throws Exception {
+	public void push(final DeploymentConfig config) throws Exception {
 		SingleResponseHandler<Void> response = new SingleResponseHandler<Void>(flux, MessageConstants.CF_PUSH_RESPONSE, flux.getUser()) {
 			@Override
 			protected Void parse(JSONObject message) throws Exception {
@@ -154,10 +169,27 @@ public class CloudFoundry {
 		};
 		flux.send(MessageConstants.CF_PUSH_REQUEST,  new JSONObject()
 			.put(USERNAME, flux.getUser())
-			.put(CF_SPACE, config.getCfSpace())
+			.put(CF_SPACE, config.getOrgSpace())
 			.put(PROJECT_NAME, config.getFluxProjectName())
 		);
-		//response.getFuture().whenDone(runnable);
+		response.getFuture().whenDone(new CompletionAdapter<Void>() {
+			@Override
+			public void rejected(Throwable e) {
+				try {
+					flux.send(CF_APP_LOG, new JSONObject()
+						.put(USERNAME, flux.getUser())
+						.put(CF_APP, config.getFluxProjectName())
+						.put(CF_ORG, config.getOrg())
+						.put(CF_SPACE, config.getSpace())
+						.put(CF_MESSAGE, CloudFoundryErrors.errorMessage(e))
+						.put(CF_STREAM, CF_STREAM_CLIENT_ERROR)
+					);
+				} catch (JSONException e1) {
+					e.printStackTrace();
+				}
+			}
+		});
+
 	}
 
 	public String getSpace() {

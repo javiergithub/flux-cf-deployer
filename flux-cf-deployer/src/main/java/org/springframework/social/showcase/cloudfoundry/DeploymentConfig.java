@@ -10,10 +10,15 @@
 *******************************************************************************/
 package org.springframework.social.showcase.cloudfoundry;
 
+import java.util.Collection;
+
 public class DeploymentConfig {
 
 	private String fluxProjectName;
-	private String cfSpace = null;
+	private String orgSpace = null;
+	
+	private String org = null;
+	private String space = null;
 	
 	public DeploymentConfig(String fluxProjectName) {
 		this.fluxProjectName = fluxProjectName;
@@ -23,17 +28,27 @@ public class DeploymentConfig {
 		return fluxProjectName;
 	}
 
-	public String getCfSpace() {
-		return cfSpace;
+	public String getOrgSpace() {
+		return orgSpace;
 	}
 
-	public void setCfSpace(String cfSpace) {
-		this.cfSpace = cfSpace;
+	public void setCfOrgSpace(String orgSpace) {
+		String[] pieces = orgSpace.split("/");
+		this.org = pieces[0];
+		this.space = pieces[1];
+		this.orgSpace = orgSpace;
 	}
 	
 	@Override
 	public String toString() {
-		return "[Deploy fluxProject '"+fluxProjectName+" to space '"+cfSpace+"']";
+		return "[Deploy fluxProject '"+fluxProjectName+" to space '"+orgSpace+"']";
+	}
+
+	public String getOrg() {
+		return org;
 	}
 	
+	public String getSpace() {
+		return space;
+	}
 }

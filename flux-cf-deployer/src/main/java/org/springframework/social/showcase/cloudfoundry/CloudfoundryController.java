@@ -14,11 +14,9 @@ import java.net.URLEncoder;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 
 import javax.inject.Inject;
 
-import org.eclipse.flux.client.util.ExceptionUtil;
 import org.springframework.core.env.Environment;
 import org.springframework.social.connect.Connection;
 import org.springframework.social.connect.ConnectionRepository;
@@ -47,36 +45,41 @@ public class CloudfoundryController {
 
 	@RequestMapping("/cloudfoundry/deploy")
 	public String deploy(Principal currentUser, Model model) throws Exception {
-		CloudFoundry cf = cfm.getConnection(currentUser);
-		if (!isLoggedIn(cf)) {
-			return "redirect:/cloudfoundry/login";
+		try {
+			CloudFoundry cf = cfm.getConnection(currentUser);
+			if (!isLoggedIn(cf)) {
+				return "redirect:/cloudfoundry/login";
+			}
+			Flux flux = flux();
+			if (flux==null) {
+				return "redirect:/singin/flux";
+			}
+			
+			String defaultSpace = cf.getSpace();
+			
+			//The page should show a list of flux project with their deployment status.
+			List<String> projects = flux.getProjects();
+			model.addAttribute("user", cf.getUser());
+			model.addAttribute("projects", projects);
+			model.addAttribute("spaces", cf.getSpaces());
+			model.addAttribute("defaultSpace", defaultSpace);
+			
+			if (projects.isEmpty()) {
+				model.addAttribute("error_message", "Nothing to deploy: You don't have any Flux projects!");
+			}
+			
+			List<DeploymentConfig> deployments = new ArrayList<DeploymentConfig>();
+			for (String pname : projects) {
+				DeploymentConfig deployConf = cf.getDeploymentConfig(pname);
+				deployments.add(deployConf);
+			}
+			model.addAttribute("deployments", deployments);
+			return "cloudfoundry/deploy";
+		} catch (Throwable e) {
+			//trouble happens is cf service gets restarted and is no longer in logged in state, but
+			// deployer app still thinks that it is. This can be solved by logging in again.
+			return "redirect:/cloudfoundry/login?error="+URLEncoder.encode(CloudFoundryErrors.errorMessage(e), "UTF8");
 		}
-		Flux flux = flux();
-		if (flux==null) {
-			return "redirect:/singin/flux";
-		}
-		
-		String defaultSpace = cf.getSpace();
-		
-		//The page should show a list of flux project with their deployment status.
-		List<String> projects = flux.getProjects();
-		model.addAttribute("user", cf.getUser());
-		model.addAttribute("projects", projects);
-		model.addAttribute("spaces", cf.getSpaces());
-		model.addAttribute("defaultSpace", defaultSpace);
-		
-		if (projects.isEmpty()) {
-			model.addAttribute("error_message", "Nothing to deploy: You don't have any Flux projects!");
-		}
-		
-		List<DeploymentConfig> deployments = new ArrayList<DeploymentConfig>();
-		for (String pname : projects) {
-			DeploymentConfig deployConf = cf.getDeploymentConfig(pname);
-			deployments.add(deployConf);
-		}
-		model.addAttribute("deployments", deployments);
-		
-		return "cloudfoundry/deploy";
 	}
 
 	private boolean isLoggedIn(CloudFoundry cf) {
@@ -98,7 +101,7 @@ public class CloudfoundryController {
 				return "redirect:/singin/flux";
 			}
 			DeploymentConfig dep = new DeploymentConfig(project);
-			dep.setCfSpace(space);
+			dep.setCfOrgSpace(space);
 			cf.setSpace(space); //use this as default space from now on
 			cf.push(dep);
 			return "redirect:/cloudfoundry/app-log"
@@ -109,7 +112,7 @@ public class CloudfoundryController {
 			//Broken cfdeployer service state, or service died. If the service is still there
 			// it likely has not been properly logged in for this user so redirect user to login page
 			// and show error message there.
-			return "redirect:/cloudfoundry/login?error="+URLEncoder.encode(errorMessage(e), "UTF8");
+			return "redirect:/cloudfoundry/login?error="+URLEncoder.encode(CloudFoundryErrors.errorMessage(e), "UTF8");
 		}
 	}
 	
@@ -148,19 +151,10 @@ public class CloudfoundryController {
 			cfm.putConnection(currentUser, cf);
 			return "redirect:/cloudfoundry/deploy";
 		} catch (Throwable e) {
-			return "redirect:/cloudfoundry/login?error="+URLEncoder.encode(errorMessage(e), "UTF8");
+			return "redirect:/cloudfoundry/login?error="+URLEncoder.encode(CloudFoundryErrors.errorMessage(e), "UTF8");
 		}
 	}
 	
-	private String errorMessage(Throwable e) {
-		e = ExceptionUtil.getDeepestCause(e);
-		if (e instanceof TimeoutException) {
-			return "CloudFoundry deployment service is not responding";
-		} else {
-			return ExceptionUtil.getMessage(e);
-		}
-	}
-
 	@RequestMapping("/cloudfoundry/login")
 	public String login() {
 		return "cloudfoundry/login";
