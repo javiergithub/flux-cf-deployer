@@ -46,5 +46,9 @@ require(['socket', 'jquery'], function (socket) {
 		logAppend(msg.stream, msg.msg);
 //		logAppend("STDOUT", "Changed ["+msg.timestamp+"] "+msg.project+"/"+msg.resource);
 	});
+	socket.on('error', function (err) {
+		logAppend("SOCKETIO", "Error connecting to websocket at: "+fluxHost);
+		logAppend("SOCKETIO", ""+err);
+	});
 	
 });
