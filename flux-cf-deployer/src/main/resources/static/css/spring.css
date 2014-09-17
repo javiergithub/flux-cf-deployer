@@ -41,13 +41,14 @@ body, h1, h2, h3 {
 .cfAppLog > .STDERROR {
 	color: red;
 }
-
 .cfAppLog > .STDOUT {
 	color: greenyellow;
 }
-
 .cfAppLog > .SVCOUT {
 	color: fuchsia;
+}
+.cfAppLog > .SOCKETIO {
+	color: orange;
 }
 
 .error {
