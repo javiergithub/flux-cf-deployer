@@ -10,6 +10,7 @@ import java.util.Map;
 import org.cloudfoundry.client.lib.ApplicationLogListener;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
+import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.StreamingLogToken;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
@@ -310,6 +311,14 @@ public class CloudFoundryClientDelegate {
 		if (error != null) {
 			writer.append(" - ");
 			writer.append(error.getMessage());
+			if (error instanceof CloudFoundryException) {
+				String desc = ((CloudFoundryException)error).getDescription();
+				if (desc!=null) {
+					writer.append(" (");
+					writer.append(desc);
+					writer.append(")");
+				}
+			}
 		}
 		writer.append('\n');
 
