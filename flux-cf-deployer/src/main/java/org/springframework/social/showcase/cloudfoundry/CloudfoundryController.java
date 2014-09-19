@@ -15,8 +15,11 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Resource;
 import javax.inject.Inject;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.env.Environment;
 import org.springframework.social.connect.Connection;
 import org.springframework.social.connect.ConnectionRepository;
@@ -26,11 +29,15 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.RestTemplate;
 
 @Controller
 public class CloudfoundryController {
 
 	private CloudFoundryManager cfm;
+	
+	@Inject
+	private RestTemplate rest;
 	
 	@Inject
 	public CloudfoundryController(CloudFoundryManager cfm) {
@@ -141,11 +148,16 @@ public class CloudfoundryController {
 		@RequestParam(required=false, value="cf_login") String login, 
 		@RequestParam(required=false, value="cf_password") String password
 	) throws Exception {
+		//Info about oauth on CF: 
+		// https://github.com/cloudfoundry/uaa/blob/master/docs/UAA-APIs.rst#implicit-grant-with-credentials-post-oauthauthorize
+		
 		Connection<Flux> flux = connectionRepository.findPrimaryConnection(Flux.class);
 
 		CloudFoundry cf = new CloudFoundry(
 				flux.getApi().getMessagingConnector(),
-				env.getProperty("cloudfoundry.url", "https://api.run.pivotal.io/"));
+				env.getProperty("cloudfoundry.url", "https://api.run.pivotal.io/"),
+				rest);
+		
 		try {
 			cf.login(login, password, null);
 			cfm.putConnection(currentUser, cf);

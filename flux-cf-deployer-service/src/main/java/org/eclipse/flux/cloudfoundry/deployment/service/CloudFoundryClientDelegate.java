@@ -20,6 +20,7 @@ import org.cloudfoundry.client.lib.domain.Staging;
 import org.eclipse.flux.client.MessageConnector;
 import org.eclipse.flux.client.MessageConstants;
 import org.json.JSONObject;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
 
 /**
  * Defines API for Cloud Foundry operations, like pushing an application.
@@ -28,53 +29,47 @@ public class CloudFoundryClientDelegate {
 
 	private static final String DEPLOYMENT_SERVICE_LABEL = "[Deployment Service]";
 	private String fluxUser;
-	private String cfUser;
+
 	private URL cloudControllerUrl;
-	private String password;
+	private OAuth2AccessToken token;
 	private String orgSpace; // org + "/" + space
 
 	private CloudFoundryClient client;
 	private String[] spaces;
 
 	private final MessageConnector connector;
+	private AppLogManager appLogs;
 
-	private final Map<String, DeployedApplicationLogListener> activeApplicationLogs = new HashMap<>();
-
-	public CloudFoundryClientDelegate(String fluxUser, String cfUser,
-			String password, URL cloudControllerUrl, String space,
-			MessageConnector connector) {
+	public CloudFoundryClientDelegate(String fluxUser, OAuth2AccessToken token, URL cloudControllerUrl, 
+			String space, MessageConnector connector, AppLogManager appLogs) {
 		this.fluxUser = fluxUser;
-		this.cfUser = cfUser;
-		this.password = password;
 		this.cloudControllerUrl = cloudControllerUrl;
-		this.client = createClient(cfUser, password, cloudControllerUrl, space);
+		this.client = createClient(token, cloudControllerUrl, space);
 		this.connector = connector;
+		this.appLogs = appLogs;
 	}
 
-	private CloudFoundryClient createClient(String cfUser, String password,
+	private CloudFoundryClient createClient(OAuth2AccessToken token,
 			URL cloudControllerUrl, String orgSpace) {
 		if (orgSpace != null) {
 			String[] pieces = getOrgSpace(orgSpace);
 			String org = pieces[0];
 			String space = pieces[1];
 			return new CloudFoundryClient(
-					new CloudCredentials(cfUser, password), cloudControllerUrl,
+					new CloudCredentials(token), cloudControllerUrl,
 					org, space);
 		} else {
 			return new CloudFoundryClient(
-					new CloudCredentials(cfUser, password), cloudControllerUrl);
+					new CloudCredentials(token), cloudControllerUrl);
 		}
+	}
+	
+	public String getFluxUser() {
+		return fluxUser;
 	}
 
 	private String[] getOrgSpace(String orgSpace) {
 		return orgSpace.split("/");
-	}
-
-	public synchronized void login(String cfUser, String password) {
-		this.cfUser = cfUser;
-		this.password = password;
-		this.client = null; //guarantees this delegate is not usable anymore if (re)login fails.
-		this.client = createClient(cfUser, password, cloudControllerUrl, orgSpace);
 	}
 
 	public synchronized void push(String appName, File location) throws Exception {
@@ -177,19 +172,31 @@ public class CloudFoundryClientDelegate {
 	}
 
 	protected void addLogListener(String appName) {
-		if (appName != null && !activeApplicationLogs.containsKey(appName)) {
+		if (appName != null) {
+			String appKey = appKey(appName);
 			handleMessage(DEPLOYMENT_SERVICE_LABEL
 					+ " - Initialising Loggregator support for - " + appName
 					+ '\n', MessageConstants.CF_STREAM_SERVICE_OUT, appName);
 			DeployedApplicationLogListener logListener = new DeployedApplicationLogListener(appName);
-			if (logListener != null) {
-				activeApplicationLogs.put(appName, logListener);
-			}
+			appLogs.put(appKey, logListener);
 		}
 	}
 
+	private String appKey(String appName) {
+		StringBuilder key = new StringBuilder();
+		String url = this.cloudControllerUrl.toString();
+		key.append(url);
+		if (!url.endsWith("/")) {
+			key.append("/");
+		}
+		key.append(this.orgSpace);
+		key.append("/");
+		key.append(appName);
+		return key.toString();
+	}
+
 	protected void removeLogListener(String appName) {
-		DeployedApplicationLogListener logHandler = activeApplicationLogs.remove(appName);
+		DeployedApplicationLogListener logHandler = appLogs.remove(appName);
 		if (logHandler != null) {
 			handleMessage(DEPLOYMENT_SERVICE_LABEL
 					+ " - Removing Loggregator support for - " + appName
@@ -199,7 +206,6 @@ public class CloudFoundryClientDelegate {
 	}
 
 	protected void stopApplication(final CloudApplication app) throws Exception {
-
 		if (app != null && app.getState() != AppState.STOPPED) {
 			new ApplicationOperation<Void>(app.getName(),
 					"Stopping application") {
@@ -223,7 +229,7 @@ public class CloudFoundryClientDelegate {
 				return;
 			}
 			this.orgSpace = space;
-			client = createClient(cfUser, password, cloudControllerUrl, space);
+			client = createClient(token, cloudControllerUrl, space);
 		} catch (Throwable e) {
 			// something went wrong, if we still have a client, its pointing at
 			// the wrong space. So...
@@ -438,6 +444,8 @@ public class CloudFoundryClientDelegate {
 			CloudFoundryClientDelegate.this.handleMessage(message + '\n',
 					MessageConstants.CF_STREAM_SERVICE_OUT, getAppName());
 		}
+		
+		
 	}
 
 	/**

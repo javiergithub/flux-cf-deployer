@@ -20,6 +20,7 @@ import org.springframework.social.connect.web.SignInAdapter;
 import org.springframework.social.showcase.cloudfoundry.CloudFoundryManager;
 import org.springframework.social.showcase.cloudfoundry.CloudFoundryManagerImpl;
 import org.springframework.social.showcase.signin.SimpleSignInAdapter;
+import org.springframework.web.client.RestTemplate;
 
 @ComponentScan(basePackages="org.springframework.social.showcase")
 @EnableConfigurationProperties
@@ -37,6 +38,11 @@ public class Application {
 	@Bean
 	public CloudFoundryManager cfm() {
 		return new CloudFoundryManagerImpl();
+	}
+	
+	@Bean
+	public RestTemplate restTemplate() {
+		return new RestTemplate();
 	}
 	
 }

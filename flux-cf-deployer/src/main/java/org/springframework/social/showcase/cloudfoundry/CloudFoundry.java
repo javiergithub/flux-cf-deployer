@@ -10,29 +10,15 @@
 *******************************************************************************/
 package org.springframework.social.showcase.cloudfoundry;
 
-import static org.eclipse.flux.client.MessageConstants.CF_APP;
-import static org.eclipse.flux.client.MessageConstants.CF_APP_LOG;
-import static org.eclipse.flux.client.MessageConstants.CF_CONTROLLER_URL;
-import static org.eclipse.flux.client.MessageConstants.CF_LOGIN_REQUEST;
-import static org.eclipse.flux.client.MessageConstants.CF_LOGIN_RESPONSE;
-import static org.eclipse.flux.client.MessageConstants.CF_MESSAGE;
-import static org.eclipse.flux.client.MessageConstants.CF_ORG;
-import static org.eclipse.flux.client.MessageConstants.CF_PASSWORD;
-import static org.eclipse.flux.client.MessageConstants.CF_SPACE;
-import static org.eclipse.flux.client.MessageConstants.CF_SPACES;
-import static org.eclipse.flux.client.MessageConstants.CF_SPACES_REQUEST;
-import static org.eclipse.flux.client.MessageConstants.CF_SPACES_RESPONSE;
-import static org.eclipse.flux.client.MessageConstants.CF_STREAM;
-import static org.eclipse.flux.client.MessageConstants.CF_STREAM_CLIENT_ERROR;
-import static org.eclipse.flux.client.MessageConstants.CF_USERNAME;
-import static org.eclipse.flux.client.MessageConstants.OK;
-import static org.eclipse.flux.client.MessageConstants.PROJECT_NAME;
-import static org.eclipse.flux.client.MessageConstants.USERNAME;
+import static org.eclipse.flux.client.MessageConstants.*;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.util.Map;
 
+import org.cloudfoundry.client.lib.CloudCredentials;
+import org.cloudfoundry.client.lib.oauth2.JsonUtil;
+import org.cloudfoundry.client.lib.oauth2.OauthClient;
 import org.eclipse.flux.client.MessageConnector;
 import org.eclipse.flux.client.MessageConstants;
 import org.eclipse.flux.client.util.CompletionAdapter;
@@ -40,49 +26,60 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.social.showcase.flux.support.SingleResponseHandler;
+import org.springframework.web.client.RestTemplate;
 
 public class CloudFoundry {
 
 	private URL cloudControllerUrl;
-	private MessageConnector flux;
+	private String authorizationUrl;
 	private String user;
-	private boolean loggedIn = false;
+	private MessageConnector flux;
 	
 	private DeploymentManager deployments = DeploymentManager.INSTANCE;
 	private String[] spaces;
 	private String space = null;
-	private String password;
+	
+	private RestTemplate rest;
+	private OauthClient oauthClient;
+	private static InfoCache<URL, Map<String,Object>> infoCache = new InfoCache<>();
 
-	public CloudFoundry(MessageConnector flux, String cloudControllerUrl) throws Exception {
+	public CloudFoundry(MessageConnector flux, String cloudControllerUrl, RestTemplate rest) throws Exception {
 		this.flux = flux;
 		this.cloudControllerUrl = new URI(cloudControllerUrl).toURL();
+		this.rest = rest;
+		this.authorizationUrl = computeAuthorizationUrl(this.cloudControllerUrl);
+		
 	}
 
+	
+	private String computeAuthorizationUrl(URL cloudControllerUrl) {
+		Map<String, Object> infoMap = getInfoMap(cloudControllerUrl);
+		return (String) infoMap.get("authorization_endpoint");
+	}
+
+
+	private Map<String, Object> getInfoMap(URL cloudControllerUrl) {
+		Map<String, Object> info = infoCache.get(cloudControllerUrl);
+		if (info!=null) {
+			return info;
+		}
+
+		String json = rest.getForObject(cloudControllerUrl + "/info", String.class);
+		info = JsonUtil.convertJsonToMap(json);
+		infoCache.put(cloudControllerUrl, info);
+		return info;
+	}
+	
+	/**
+	 * Use Rest calls (OAuthClient) to verify user credentials and obtain an OAuth 
+	 * access token.
+	 */
 	public void login(String login, String password, String space) throws Exception {
 		try {
-			JSONObject msg = new JSONObject()
-				.put(USERNAME, flux.getUser())
-				.put(CF_CONTROLLER_URL, cloudControllerUrl.toString())
-				.put(CF_USERNAME, login)
-				.put(CF_PASSWORD, password)
-				.put(CF_SPACE, space);
-			SingleResponseHandler<Void> response = new SingleResponseHandler<Void>(flux, CF_LOGIN_RESPONSE, flux.getUser()) {
-				@Override
-				protected Void parse(JSONObject message) throws Exception {
-					boolean ok = message.getBoolean(OK);
-					if (!ok) {
-						throw new IOException("Login failed for unkownn reason");
-					}
-					return null;
-				}
-			};
-			flux.send(CF_LOGIN_REQUEST, msg);
-			
-			response.awaitResult();
-			loggedIn = true;
+			OauthClient client = new OauthClient(new URL(authorizationUrl), rest);
+			client.init(new CloudCredentials(login, password));
+			oauthClient = client;
 			this.user = login;
-			this.password = password;
-			this.space = space;
 		} catch (Throwable e) {
 			logout();
 			if (e instanceof Exception) {
@@ -92,12 +89,11 @@ public class CloudFoundry {
 			}
 		}
 	}
-
+	
 	private void logout() {
-		this.loggedIn = false;
-		this.user = null;
-		this.password = null;
+		this.oauthClient = null;
 		this.space = null;
+		this.user = null;
 	}
 
 	public String getUser() {
@@ -109,11 +105,13 @@ public class CloudFoundry {
 			return spaces;
 		}
 		try {
-			if (!loggedIn) {
+			if (!isLoggedIn()) {
 				throw new IllegalStateException("Not logged in to CF");
 			}
 			JSONObject msg = new JSONObject()
-				.put(USERNAME, flux.getUser());
+				.put(USERNAME, flux.getUser())
+				.put(CF_CONTROLLER_URL, this.cloudControllerUrl.toString())
+				.put(CF_TOKEN, oauthClient.getToken().getValue());
 			SingleResponseHandler<String[]> response = new SingleResponseHandler<String[]>(flux, CF_SPACES_RESPONSE, flux.getUser()) {
 				@Override
 				protected String[] parse(JSONObject message) throws Exception {
@@ -168,7 +166,9 @@ public class CloudFoundry {
 			}
 		};
 		flux.send(MessageConstants.CF_PUSH_REQUEST,  new JSONObject()
+			.put(CF_CONTROLLER_URL, this.cloudControllerUrl.toString())
 			.put(USERNAME, flux.getUser())
+			.put(CF_TOKEN, oauthClient.getToken().getValue()) //Note this token may expire within 30 minutes.
 			.put(CF_SPACE, config.getOrgSpace())
 			.put(PROJECT_NAME, config.getFluxProjectName())
 		);
@@ -197,8 +197,8 @@ public class CloudFoundry {
 	}
 
 	public void setSpace(String space) throws Exception {
-		if (loggedIn) {
-			login(this.user, this.password, this.space);
+		if (isLoggedIn()) {
+			this.space = space;
 		} else {
 			throw new IllegalStateException("Not logged in");
 		}
@@ -210,7 +210,7 @@ public class CloudFoundry {
 	}
 
 	public boolean isLoggedIn() {
-		return loggedIn;
+		return oauthClient!=null;
 	}
 
 
