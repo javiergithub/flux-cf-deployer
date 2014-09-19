@@ -12,19 +12,28 @@
 
 ## Localhost deployments
 
-First you must make sure to have Flux server running locally as well. See the Flux readme
-for instructions.
+Steps:
 
-When you have Flux up and running, run the shell script in `flux-cf-deployer-releng/run-local.sh`.
+  1. Ensure you have the main flux repo checked out side-by-side with this one.
+  2. Start the Flux server locally. See the [Flux readme](https://github.com/eclipse/flux/blob/master/README.md) for instructions.
+  3. Make environment variable variable `FLUX_GITHUB_CLIENT_SECRET` is set to the same one used to run the Flux server.
+  4. Run the shell script `flux-cf-deployer-releng/run-local.sh`
 
-This script runs maven to build both projects and then runs them. 
-Note that to build it succesfully you need to have the code in the main Flux repo checked out
-side-by-side with this repo.
+Notes: 
+
+  - The script runs maven to build both projects and then runs them. To build succesfully you need to have the 
+code in the main Flux repo checked out side-by-side with this repo.
+
+  - Two background processes are started. Use OS commands like `kill -9 <pid>` to stop them.
+  
+  - Make sure not to run more than one instance of `flux-cf-deployer-service` at the same time. The current
+    implementation assumes there is only one instance. If two instances are started they will both
+    respond to requests simultaneously and this will cause problems.
 
 ## Deploying to CloudFoundry
 
 To deploy to CloudFoundry, run the `flux-cf-deployer-releng/push-all.sh` script.
-Note that thus requires the 'manifest.yml' files in `flux-cf-deployer` and
+This requires the 'manifest.yml' files in `flux-cf-deployer` and
 `flux-cf-deployer-service`. These files are encrypted with [git-crypt](https://github.com/AGWA/git-crypt).
 
 The files are automatically decrypted on checkout provided you have git-crypt 
