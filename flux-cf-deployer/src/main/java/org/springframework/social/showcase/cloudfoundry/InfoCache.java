@@ -12,7 +12,7 @@ package org.springframework.social.showcase.cloudfoundry;
 
 /**
  * A trival map-like cache that only keeps one key-value pair.  If a new pair is put in the old one is
- * lost.
+ * lost. This is sufficient for what we use it
  * 
  * @author Kris De Volder
  */
