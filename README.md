@@ -10,7 +10,13 @@
   
 # Running the Service and WebApp Locally
 
-## Localhost deployments
+## Full Localhost deployments
+
+In this setup you run everything (except cloudfoundry itself) locally:
+
+  - flux node.server
+  - cf-deployer
+  - cf-deployer-service
 
 Steps:
 
@@ -29,6 +35,28 @@ code in the main Flux repo checked out side-by-side with this repo.
   - Make sure not to run more than one instance of `flux-cf-deployer-service` at the same time. The current
     implementation assumes there is only one instance. If two instances are started they will both
     respond to requests simultaneously and this will cause problems.
+    
+## Running only the cf-deployer app
+
+It is possible to run only the cf-deployer-app locally and consume the cf-deployer-service via 
+flux.cfapps.io. 
+
+Steps
+
+ 1. edit `cf-deployer/src/main/resources/application.properties'.
+    Change cfd.flux.host property to "https://flux.cfapps.io:4443"
+ 2. Run cf-deployer as a spring-boot app.
+ 
+The cf-deployer app is now running at `http://localhost:8080/`.
+
+This assumes that cf-deployer-service is already running on cloudfoundry and
+connected to `https://flux.cfapps.io:4443` as well.
+
+## Running only cf-deployer-service locally
+
+This is also possible but it is not recommended. If you connect a local cf-deployer-service
+to flux.cfapps.io and there is already a cf-deployer-service running on CF then both instances
+will compete and interfere with eachother causing problems.
 
 ## Deploying to CloudFoundry
 
