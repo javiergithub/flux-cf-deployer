@@ -130,9 +130,9 @@ public class CloudFoundry {
 		}
 	}
 	
-	public synchronized CfFluxDeployment getFluxDeployment(String fluxProjectName) {
-		return deployments.get(user, fluxProjectName);
-	}
+//	public synchronized CfFluxDeployment getFluxDeployment(String fluxProjectName) {
+//		return deployments.get(user, fluxProjectName);
+//	}
 
 	public synchronized DeploymentConfig createDefaultDeploymentConfig(String fluxProjectName) {
 		return new DeploymentConfig(fluxProjectName);

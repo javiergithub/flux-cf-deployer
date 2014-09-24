@@ -10,7 +10,6 @@
 *******************************************************************************/
 package org.springframework.social.showcase.cloudfoundry;
 
-import java.util.Collection;
 
 public class DeploymentConfig {
 
@@ -50,5 +49,12 @@ public class DeploymentConfig {
 	
 	public String getSpace() {
 		return space;
+	}
+
+	public String[] getRoutes() {
+		//TODO: when we allow users to manage routes this can not be hard-coded anymore
+		return new String[] {
+				this.fluxProjectName + ".cfapps.io"
+		};
 	}
 }

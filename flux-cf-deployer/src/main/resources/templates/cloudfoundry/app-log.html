@@ -43,6 +43,8 @@
 					<dd th:text="${space}">dingbats</dd>
 				<dt>App</dt>
 					<dd th:text="${app}">hammer-scroll</dd>
+				<dt>Routes</dt>
+					<dd><a th:each="route : ${routes}" th:text="${route}" th:href="'http://'+${route}"></a></dd>
 			</dl>
 			
 			<div class="cfAppLog">

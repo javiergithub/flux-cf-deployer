@@ -15,11 +15,8 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.annotation.Resource;
 import javax.inject.Inject;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.env.Environment;
 import org.springframework.social.connect.Connection;
 import org.springframework.social.connect.ConnectionRepository;
@@ -181,10 +178,15 @@ public class CloudfoundryController {
 		if (flux==null) {
 			return "redirect:/singin/flux";
 		}
+		CloudFoundry cf = cfm.getConnection(currentUser);
+		if (cf==null) {
+			return "redirect:/cloudfoundry/login";
+		}
 		String [] pieces = orgSpace.split("/");
 		model.addAttribute("org",pieces[0]);
 		model.addAttribute("space", pieces[1]);
 		model.addAttribute("app", project);
+		model.addAttribute("routes", cf.getDeploymentConfig(project).getRoutes());
 		
 		model.addAttribute("fluxUser", flux.getUserProfile().getLogin());
 		model.addAttribute("fluxHost", flux.getMessagingConnector().getHost());
