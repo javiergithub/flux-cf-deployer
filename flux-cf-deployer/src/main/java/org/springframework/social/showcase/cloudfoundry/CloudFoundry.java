@@ -25,6 +25,7 @@ import org.eclipse.flux.client.util.CompletionAdapter;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.springframework.social.showcase.flux.support.Flux;
 import org.springframework.social.showcase.flux.support.SingleResponseHandler;
 import org.springframework.web.client.RestTemplate;
 
@@ -33,7 +34,6 @@ public class CloudFoundry {
 	private URL cloudControllerUrl;
 	private String authorizationUrl;
 	private String user;
-	private MessageConnector flux;
 	
 	private DeploymentManager deployments = DeploymentManager.INSTANCE;
 	private String[] spaces;
@@ -43,12 +43,10 @@ public class CloudFoundry {
 	private OauthClient oauthClient;
 	private static InfoCache<URL, Map<String,Object>> infoCache = new InfoCache<>();
 
-	public CloudFoundry(MessageConnector flux, String cloudControllerUrl, RestTemplate rest) throws Exception {
-		this.flux = flux;
+	public CloudFoundry(String cloudControllerUrl, RestTemplate rest) throws Exception {
 		this.cloudControllerUrl = new URI(cloudControllerUrl).toURL();
 		this.rest = rest;
 		this.authorizationUrl = computeAuthorizationUrl(this.cloudControllerUrl);
-		
 	}
 
 	
@@ -73,8 +71,9 @@ public class CloudFoundry {
 	/**
 	 * Use Rest calls (OAuthClient) to verify user credentials and obtain an OAuth 
 	 * access token.
+	 * @param flux 
 	 */
-	public void login(String login, String password, String space) throws Exception {
+	public void login(Flux flux, String login, String password, String space) throws Exception {
 		try {
 			OauthClient client = new OauthClient(new URL(authorizationUrl), rest);
 			client.init(new CloudCredentials(login, password));
@@ -100,7 +99,7 @@ public class CloudFoundry {
 		return user;
 	}
 
-	public String[] getSpaces() {
+	public String[] getSpaces(MessageConnector flux) {
 		if (this.spaces!=null) {
 			return spaces;
 		}
@@ -134,7 +133,7 @@ public class CloudFoundry {
 		return new DeploymentConfig(fluxProjectName);
 	}
 
-	public synchronized DeploymentConfig getDeploymentConfig(String fluxProjectName) {
+	public synchronized DeploymentConfig getDeploymentConfig(MessageConnector flux, String fluxProjectName) {
 		CfFluxDeployment deployment = deployments.get(flux.getUser(), fluxProjectName);
 		if (deployment==null) {
 			return createDefaultDeploymentConfig(fluxProjectName);
@@ -143,7 +142,7 @@ public class CloudFoundry {
 		}
 	}
 
-	public synchronized void apply(DeploymentConfig config) {
+	public synchronized void apply(MessageConnector flux, DeploymentConfig config) {
 		String fluxProjectName = config.getFluxProjectName();
 		String fluxUser = flux.getUser();
 		CfFluxDeployment deployment = deployments.get(fluxUser, fluxProjectName);
@@ -154,7 +153,7 @@ public class CloudFoundry {
 		deployment.configure(config);
 	}
 
-	public void push(final DeploymentConfig config) throws Exception {
+	public void push(MessageConnector flux, final DeploymentConfig config) throws Exception {
 		SingleResponseHandler<Void> response = new SingleResponseHandler<Void>(flux, MessageConstants.CF_PUSH_RESPONSE, flux.getUser()) {
 			@Override
 			protected Void parse(JSONObject message) throws Exception {
@@ -168,23 +167,26 @@ public class CloudFoundry {
 			.put(CF_SPACE, config.getOrgSpace())
 			.put(PROJECT_NAME, config.getFluxProjectName())
 		);
-		response.getFuture().whenDone(new CompletionAdapter<Void>() {
-			@Override
-			public void rejected(Throwable e) {
-				try {
-					flux.send(CF_APP_LOG, new JSONObject()
-						.put(USERNAME, flux.getUser())
-						.put(CF_APP, config.getFluxProjectName())
-						.put(CF_ORG, config.getOrg())
-						.put(CF_SPACE, config.getSpace())
-						.put(CF_MESSAGE, CloudFoundryErrors.errorMessage(e))
-						.put(CF_STREAM, CF_STREAM_CLIENT_ERROR)
-					);
-				} catch (JSONException e1) {
-					e.printStackTrace();
-				}
-			}
-		});
+// We'd like to do this, but we can't because the flux MessageConnector will be closed at the end of 
+// of this method.
+
+//		response.getFuture().whenDone(new CompletionAdapter<Void>() {
+//			@Override
+//			public void rejected(Throwable e) {
+//				try {
+//					flux.send(CF_APP_LOG, new JSONObject()
+//						.put(USERNAME, flux.getUser())
+//						.put(CF_APP, config.getFluxProjectName())
+//						.put(CF_ORG, config.getOrg())
+//						.put(CF_SPACE, config.getSpace())
+//						.put(CF_MESSAGE, CloudFoundryErrors.errorMessage(e))
+//						.put(CF_STREAM, CF_STREAM_CLIENT_ERROR)
+//					);
+//				} catch (JSONException e1) {
+//					e.printStackTrace();
+//				}
+//			}
+//		});
 
 	}
 

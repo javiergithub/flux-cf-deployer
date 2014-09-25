@@ -13,9 +13,10 @@ package org.springframework.social.showcase.flux.support;
 import java.util.List;
 
 import org.eclipse.flux.client.MessageConnector;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.social.github.api.GitHubUserProfile;
 
-public interface Flux {
+public interface Flux extends DisposableBean {
 
 	GitHubUserProfile getUserProfile();
 

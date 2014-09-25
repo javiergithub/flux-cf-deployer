@@ -81,12 +81,12 @@ public class FluxDeployerConfiguration extends SocialConfigurerAdapter {
 		return repository;
 	}
 
-//	@Bean
-//	@Scope(value="request", proxyMode=ScopedProxyMode.INTERFACES)
-//	public Flux flux(ConnectionRepository repository) {
-//		Connection<Flux> connection = repository.findPrimaryConnection(Flux.class);
-//		return connection != null ? connection.getApi() : null;
-//	}
+	@Bean(destroyMethod="destroy")
+	@Scope(value="request", proxyMode=ScopedProxyMode.INTERFACES)
+	public Flux flux(ConnectionRepository repository) {
+		Connection<Flux> connection = repository.findPrimaryConnection(Flux.class);
+		return connection != null ? connection.getApi() : null;
+	}
 
 	@Bean
 	public ProviderSignInController providerSignInController(ConnectionFactoryLocator connectionFactoryLocator, UsersConnectionRepository usersConnectionRepository) {

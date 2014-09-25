@@ -17,13 +17,14 @@ import org.eclipse.flux.client.FluxClient;
 import org.eclipse.flux.client.MessageConnector;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.social.github.api.GitHubUserProfile;
 import org.springframework.social.github.api.impl.GitHubTemplate;
 
 /**
  * Trying to create a Flux connector similar to Github/Twitter etc connector in spring social.
  */
-public class FluxImpl implements Flux {
+public class FluxImpl implements Flux, DisposableBean {
 
 	private static final String USERNAME = "username";
 	private static final String GET_PROJECTS_REQUEST = "getProjectsRequest";
@@ -103,6 +104,20 @@ public class FluxImpl implements Flux {
 			username = getUserProfile().getLogin();
 		}
 		return username;
+	}
+
+	@Override
+	public void destroy() throws Exception {
+		MessageConnector c = connector;
+		if (c!=null) {
+			connector = null;
+			c.disconnect();
+		}
+		accessToken = null;
+		host = null;
+		fluxClient= null;
+		github = null;
+		username = null;
 	}
 
 }

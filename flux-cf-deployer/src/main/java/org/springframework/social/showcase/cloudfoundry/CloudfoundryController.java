@@ -18,8 +18,6 @@ import java.util.List;
 import javax.inject.Inject;
 
 import org.springframework.core.env.Environment;
-import org.springframework.social.connect.Connection;
-import org.springframework.social.connect.ConnectionRepository;
 import org.springframework.social.showcase.flux.support.Flux;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -34,15 +32,15 @@ public class CloudfoundryController {
 	private CloudFoundryManager cfm;
 	
 	@Inject
+	Flux flux;
+	
+	@Inject
 	private RestTemplate rest;
 	
 	@Inject
 	public CloudfoundryController(CloudFoundryManager cfm) {
 		this.cfm = cfm;
 	}
-	
-	@Inject
-	private ConnectionRepository connectionRepository;
 	
 	@Inject
 	private Environment env;
@@ -54,7 +52,6 @@ public class CloudfoundryController {
 			if (!isLoggedIn(cf)) {
 				return "redirect:/cloudfoundry/login";
 			}
-			Flux flux = flux();
 			if (flux==null) {
 				return "redirect:/singin/flux";
 			}
@@ -65,7 +62,7 @@ public class CloudfoundryController {
 			List<String> projects = flux.getProjects();
 			model.addAttribute("user", cf.getUser());
 			model.addAttribute("projects", projects);
-			model.addAttribute("spaces", cf.getSpaces());
+			model.addAttribute("spaces", cf.getSpaces(flux.getMessagingConnector()));
 			model.addAttribute("defaultSpace", defaultSpace);
 			
 			if (projects.isEmpty()) {
@@ -74,7 +71,7 @@ public class CloudfoundryController {
 			
 			List<DeploymentConfig> deployments = new ArrayList<DeploymentConfig>();
 			for (String pname : projects) {
-				DeploymentConfig deployConf = cf.getDeploymentConfig(pname);
+				DeploymentConfig deployConf = cf.getDeploymentConfig(flux.getMessagingConnector(), pname);
 				deployments.add(deployConf);
 			}
 			model.addAttribute("deployments", deployments);
@@ -94,20 +91,20 @@ public class CloudfoundryController {
 	public String deployDo(Principal currentUser, 
 			@RequestParam("project") String project,
 			@RequestParam("space") String space,
-			Model model) throws Exception {
+			Model model
+		) throws Exception {
 		try {
 			CloudFoundry cf = cfm.getConnection(currentUser);
 			if (!isLoggedIn(cf)) {
 				return "redirect:/cloudfoundry/login";
 			}
-			Flux flux = flux();
 			if (flux==null) {
 				return "redirect:/singin/flux";
 			}
 			DeploymentConfig dep = new DeploymentConfig(project);
 			dep.setCfOrgSpace(space);
 			cf.setSpace(space); //use this as default space from now on
-			cf.push(dep);
+			cf.push(flux.getMessagingConnector(), dep);
 			return "redirect:/cloudfoundry/app-log"
 				+"?space="+URLEncoder.encode(space, "UTF-8")
 				+"&project="+URLEncoder.encode(project, "UTF-8");
@@ -120,14 +117,6 @@ public class CloudfoundryController {
 		}
 	}
 	
-	private Flux flux() {
-		Connection<Flux> connection = connectionRepository.findPrimaryConnection(Flux.class);
-		if (connection!=null) {
-			return connection.getApi();
-		}
-		return null;
-	}
-
 	@RequestMapping(value="/cloudfoundry")
 	public String profile(Principal currentUser, Model model) {
 		CloudFoundry cf = cfm.getConnection(currentUser);
@@ -136,7 +125,7 @@ public class CloudfoundryController {
 		}
 		model.addAttribute("space", cf.getSpace());
 		model.addAttribute("user", cf.getUser());
-		model.addAttribute("spaces", cf.getSpaces());
+		model.addAttribute("spaces", cf.getSpaces(flux.getMessagingConnector()));
 		return "cloudfoundry";
 	}
 	
@@ -148,15 +137,12 @@ public class CloudfoundryController {
 		//Info about oauth on CF: 
 		// https://github.com/cloudfoundry/uaa/blob/master/docs/UAA-APIs.rst#implicit-grant-with-credentials-post-oauthauthorize
 		
-		Connection<Flux> flux = connectionRepository.findPrimaryConnection(Flux.class);
-
 		CloudFoundry cf = new CloudFoundry(
-				flux.getApi().getMessagingConnector(),
 				env.getProperty("cloudfoundry.url", "https://api.run.pivotal.io/"),
 				rest);
 		
 		try {
-			cf.login(login, password, null);
+			cf.login(flux, login, password, null);
 			cfm.putConnection(currentUser, cf);
 			return "redirect:/cloudfoundry/deploy";
 		} catch (Throwable e) {
@@ -174,7 +160,6 @@ public class CloudfoundryController {
 		@RequestParam("space") String orgSpace,
 		@RequestParam("project") String project
 	) {
-		Flux flux = flux();
 		if (flux==null) {
 			return "redirect:/singin/flux";
 		}
@@ -186,7 +171,7 @@ public class CloudfoundryController {
 		model.addAttribute("org",pieces[0]);
 		model.addAttribute("space", pieces[1]);
 		model.addAttribute("app", project);
-		model.addAttribute("routes", cf.getDeploymentConfig(project).getRoutes());
+		model.addAttribute("routes", cf.getDeploymentConfig(flux.getMessagingConnector(), project).getRoutes());
 		
 		model.addAttribute("fluxUser", flux.getUserProfile().getLogin());
 		model.addAttribute("fluxHost", flux.getMessagingConnector().getHost());
