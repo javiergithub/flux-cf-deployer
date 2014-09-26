@@ -10,7 +10,14 @@
 *******************************************************************************/
 package org.springframework.social.showcase.cloudfoundry;
 
-import static org.eclipse.flux.client.MessageConstants.*;
+import static org.eclipse.flux.client.MessageConstants.CF_CONTROLLER_URL;
+import static org.eclipse.flux.client.MessageConstants.CF_SPACE;
+import static org.eclipse.flux.client.MessageConstants.CF_SPACES;
+import static org.eclipse.flux.client.MessageConstants.CF_SPACES_REQUEST;
+import static org.eclipse.flux.client.MessageConstants.CF_SPACES_RESPONSE;
+import static org.eclipse.flux.client.MessageConstants.CF_TOKEN;
+import static org.eclipse.flux.client.MessageConstants.PROJECT_NAME;
+import static org.eclipse.flux.client.MessageConstants.USERNAME;
 
 import java.net.URI;
 import java.net.URL;
@@ -21,9 +28,7 @@ import org.cloudfoundry.client.lib.oauth2.JsonUtil;
 import org.cloudfoundry.client.lib.oauth2.OauthClient;
 import org.eclipse.flux.client.MessageConnector;
 import org.eclipse.flux.client.MessageConstants;
-import org.eclipse.flux.client.util.CompletionAdapter;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.social.showcase.flux.support.Flux;
 import org.springframework.social.showcase.flux.support.SingleResponseHandler;
@@ -100,7 +105,9 @@ public class CloudFoundry {
 	}
 
 	public String[] getSpaces(MessageConnector flux) {
+		System.out.println("getSpace("+flux+")");
 		if (this.spaces!=null) {
+			System.out.println("return spaces from cache");
 			return spaces;
 		}
 		try {
@@ -111,6 +118,7 @@ public class CloudFoundry {
 				.put(USERNAME, flux.getUser())
 				.put(CF_CONTROLLER_URL, this.cloudControllerUrl.toString())
 				.put(CF_TOKEN, oauthClient.getToken().getValue());
+			System.out.println("msg = "+msg);
 			SingleResponseHandler<String[]> response = new SingleResponseHandler<String[]>(flux, CF_SPACES_RESPONSE, flux.getUser()) {
 				@Override
 				protected String[] parse(JSONObject message) throws Exception {

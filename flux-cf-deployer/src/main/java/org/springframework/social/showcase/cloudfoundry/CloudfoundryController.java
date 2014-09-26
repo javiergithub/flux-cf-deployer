@@ -48,21 +48,29 @@ public class CloudfoundryController {
 	@RequestMapping("/cloudfoundry/deploy")
 	public String deploy(Principal currentUser, Model model) throws Exception {
 		try {
+			System.out.println("Handling /cloudfoundry/deploy");
 			CloudFoundry cf = cfm.getConnection(currentUser);
 			if (!isLoggedIn(cf)) {
 				return "redirect:/cloudfoundry/login";
 			}
+			System.out.println("Cloudfoundry isLoggedIn => OK");
 			if (flux==null) {
 				return "redirect:/singin/flux";
 			}
+			System.out.println("flux = "+flux);
 			
 			String defaultSpace = cf.getSpace();
+			System.out.println("defaultSpace = "+defaultSpace);
 			
 			//The page should show a list of flux project with their deployment status.
 			List<String> projects = flux.getProjects();
+			System.out.println("projects = "+projects);
+			String[] spaces = cf.getSpaces(flux.getMessagingConnector());
+			System.out.println("spaces = "+spaces);
+			
 			model.addAttribute("user", cf.getUser());
 			model.addAttribute("projects", projects);
-			model.addAttribute("spaces", cf.getSpaces(flux.getMessagingConnector()));
+			model.addAttribute("spaces", spaces);
 			model.addAttribute("defaultSpace", defaultSpace);
 			
 			if (projects.isEmpty()) {
@@ -77,6 +85,7 @@ public class CloudfoundryController {
 			model.addAttribute("deployments", deployments);
 			return "cloudfoundry/deploy";
 		} catch (Throwable e) {
+			e.printStackTrace();
 			//trouble happens is cf service gets restarted and is no longer in logged in state, but
 			// deployer app still thinks that it is. This can be solved by logging in again.
 			return "redirect:/cloudfoundry/login?error="+URLEncoder.encode(CloudFoundryErrors.errorMessage(e), "UTF8");
@@ -118,7 +127,7 @@ public class CloudfoundryController {
 	}
 	
 	@RequestMapping(value="/cloudfoundry")
-	public String profile(Principal currentUser, Model model) {
+	public String profile(Principal currentUser, Model model) throws Exception {
 		CloudFoundry cf = cfm.getConnection(currentUser);
 		if (!isLoggedIn(cf)) {
 			return "redirect:/cloudfoundry/login";
@@ -146,6 +155,7 @@ public class CloudfoundryController {
 			cfm.putConnection(currentUser, cf);
 			return "redirect:/cloudfoundry/deploy";
 		} catch (Throwable e) {
+			e.printStackTrace();
 			return "redirect:/cloudfoundry/login?error="+URLEncoder.encode(CloudFoundryErrors.errorMessage(e), "UTF8");
 		}
 	}
@@ -159,7 +169,7 @@ public class CloudfoundryController {
 	public String appLogs(Principal currentUser, Model model,
 		@RequestParam("space") String orgSpace,
 		@RequestParam("project") String project
-	) {
+	) throws Exception {
 		if (flux==null) {
 			return "redirect:/singin/flux";
 		}

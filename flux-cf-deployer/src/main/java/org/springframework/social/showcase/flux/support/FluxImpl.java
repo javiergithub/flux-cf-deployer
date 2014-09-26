@@ -87,14 +87,14 @@ public class FluxImpl implements Flux, DisposableBean {
 	}
 
 	@Override
-	public synchronized MessageConnector getMessagingConnector() {
+	public synchronized MessageConnector getMessagingConnector() throws Exception {
 		if (connector==null) {
 			this.connector = fluxClient.connect(
 					host,
 					getUsername(),
 					getAccessToken()
 			);
-			this.connector.connectToChannel(getUsername());
+			this.connector.connectToChannelSync(getUsername());
 		}
 		return connector;
 	}

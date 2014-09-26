@@ -24,6 +24,6 @@ public interface Flux extends DisposableBean {
 
 	List<String> getProjects() throws Exception;
 
-	MessageConnector getMessagingConnector();
+	MessageConnector getMessagingConnector() throws Exception;
 	
 }
