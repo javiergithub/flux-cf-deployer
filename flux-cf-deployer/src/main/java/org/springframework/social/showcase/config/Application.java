@@ -10,6 +10,17 @@
 *******************************************************************************/
 package org.springframework.social.showcase.config;
 
+import java.io.IOException;
+
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -43,6 +54,49 @@ public class Application {
 	@Bean
 	public RestTemplate restTemplate() {
 		return new RestTemplate();
+	}
+	
+	@Bean
+	public Filter httpsRedirect() {
+		//Filter that redirects any http request to https on cloudfoundry.
+		return new Filter() {
+			
+			@Override
+			public void init(FilterConfig filterConfig) throws ServletException {
+			}
+
+			@Override
+			public void doFilter(ServletRequest request,
+					ServletResponse response, FilterChain chain)
+					throws IOException, ServletException {
+				if ("http".equals(request.getScheme())) {
+					String serverName = request.getServerName();
+					if (serverName.endsWith("cfapps.io")) {
+						HttpServletRequest req = (HttpServletRequest) request;
+						HttpServletResponse res = (HttpServletResponse) response;
+						if (response instanceof HttpServletResponse) {
+							String redirectTo = req.getRequestURL().toString();
+							if (redirectTo.startsWith("http:")) {
+								redirectTo = "https:"+redirectTo.substring(5);
+								String q = req.getQueryString();
+								if (q!=null) {
+									redirectTo = redirectTo +"?" + q;
+								}
+							}
+							res.sendRedirect(redirectTo);
+							return;
+						}
+					}
+				}
+				//Our filter does not apply... pas on to next guy in chain
+				chain.doFilter(request, response);
+			}
+
+			@Override
+			public void destroy() {
+			}
+			
+		};
 	}
 	
 }
