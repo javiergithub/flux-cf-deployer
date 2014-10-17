@@ -115,11 +115,11 @@ public class CloudFoundry {
 				throw new IllegalStateException("Not logged in to CF");
 			}
 			JSONObject msg = new JSONObject()
-				.put(USERNAME, flux.getUser())
+				.put(USERNAME, flux.getConfig().getUser())
 				.put(CF_CONTROLLER_URL, this.cloudControllerUrl.toString())
 				.put(CF_TOKEN, oauthClient.getToken().getValue());
 			System.out.println("msg = "+msg);
-			SingleResponseHandler<String[]> response = new SingleResponseHandler<String[]>(flux, CF_SPACES_RESPONSE, flux.getUser()) {
+			SingleResponseHandler<String[]> response = new SingleResponseHandler<String[]>(flux, CF_SPACES_RESPONSE, flux.getConfig().getUser()) {
 				@Override
 				protected String[] parse(JSONObject message) throws Exception {
 					JSONArray _spaces = message.getJSONArray(CF_SPACES);
@@ -142,7 +142,7 @@ public class CloudFoundry {
 	}
 
 	public synchronized DeploymentConfig getDeploymentConfig(MessageConnector flux, String fluxProjectName) {
-		CfFluxDeployment deployment = deployments.get(flux.getUser(), fluxProjectName);
+		CfFluxDeployment deployment = deployments.get(flux.getConfig().getUser(), fluxProjectName);
 		if (deployment==null) {
 			return createDefaultDeploymentConfig(fluxProjectName);
 		} else {
@@ -152,7 +152,7 @@ public class CloudFoundry {
 
 	public synchronized void apply(MessageConnector flux, DeploymentConfig config) {
 		String fluxProjectName = config.getFluxProjectName();
-		String fluxUser = flux.getUser();
+		String fluxUser = flux.getConfig().getUser();
 		CfFluxDeployment deployment = deployments.get(fluxUser, fluxProjectName);
 		if (deployment==null) {
 			deployment = new CfFluxDeployment(this, fluxProjectName);
@@ -162,7 +162,7 @@ public class CloudFoundry {
 	}
 
 	public void push(MessageConnector flux, final DeploymentConfig config) throws Exception {
-		SingleResponseHandler<Void> response = new SingleResponseHandler<Void>(flux, MessageConstants.CF_PUSH_RESPONSE, flux.getUser()) {
+		SingleResponseHandler<Void> response = new SingleResponseHandler<Void>(flux, MessageConstants.CF_PUSH_RESPONSE, flux.getConfig().getUser()) {
 			@Override
 			protected Void parse(JSONObject message) throws Exception {
 				return null;
@@ -170,7 +170,7 @@ public class CloudFoundry {
 		};
 		flux.send(MessageConstants.CF_PUSH_REQUEST,  new JSONObject()
 			.put(CF_CONTROLLER_URL, this.cloudControllerUrl.toString())
-			.put(USERNAME, flux.getUser())
+			.put(USERNAME, flux.getConfig().getUser())
 			.put(CF_TOKEN, oauthClient.getToken().getValue()) //Note this token may expire within 30 minutes.
 			.put(CF_SPACE, config.getOrgSpace())
 			.put(PROJECT_NAME, config.getFluxProjectName())

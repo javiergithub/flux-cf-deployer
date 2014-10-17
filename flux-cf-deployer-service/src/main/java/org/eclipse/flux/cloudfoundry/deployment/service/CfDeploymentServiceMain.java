@@ -11,7 +11,7 @@
 package org.eclipse.flux.cloudfoundry.deployment.service;
 
 import org.eclipse.flux.client.FluxClient;
-import org.eclipse.flux.client.config.FluxConfig;
+import org.eclipse.flux.client.config.SocketIOFluxConfig;
 
 public class CfDeploymentServiceMain {
 
@@ -24,7 +24,7 @@ public class CfDeploymentServiceMain {
 	public static void main(String[] args) {
 // This turns of socket.io logging:
 //		LogManager.getLogManager().reset();
-		CfDeploymentService instance = new CfDeploymentService(FluxClient.DEFAULT_INSTANCE, FluxConfig.superConfig());
+		CfDeploymentService instance = new CfDeploymentService(FluxClient.DEFAULT_INSTANCE, SocketIOFluxConfig.superConfig());
 		instance.start();
 	}
 }

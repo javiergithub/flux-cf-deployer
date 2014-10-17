@@ -184,7 +184,7 @@ public class CloudfoundryController {
 		model.addAttribute("routes", cf.getDeploymentConfig(flux.getMessagingConnector(), project).getRoutes());
 		
 		model.addAttribute("fluxUser", flux.getUserProfile().getLogin());
-		model.addAttribute("fluxHost", flux.getMessagingConnector().getHost());
+		model.addAttribute("fluxHost", flux.getMessagingConnector().getConfig().toSocketIO().getHost());
 		model.addAttribute("fluxToken", flux.getAccessToken());
 		return "cloudfoundry/app-log";
 	}

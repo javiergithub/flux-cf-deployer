@@ -22,6 +22,7 @@ import static org.eclipse.flux.client.MessageConstants.USERNAME;
 import java.io.File;
 import java.net.URI;
 import java.util.Date;
+import java.util.concurrent.ExecutorService;
 
 import org.eclipse.flux.client.FluxClient;
 import org.eclipse.flux.client.MessageConnector;
@@ -34,6 +35,7 @@ import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 public class CfDeploymentService {
 	
 	private FluxClient fluxClient = FluxClient.DEFAULT_INSTANCE;
+	private ExecutorService executor = fluxClient.getExecutor();
 	private FluxConfig fluxConf;
 	private MessageConnector flux;
 	private AppLogManager appLogs = new AppLogManager();
@@ -84,12 +86,13 @@ public class CfDeploymentService {
 		});
 		
 		flux.addMessageHandler(new RequestResponseHandler(flux, CF_PUSH_REQUEST) {
+
 			protected JSONObject fillResponse(String type, JSONObject req,
 					JSONObject res) throws Exception {
 				final String projectName = req.getString(PROJECT_NAME);
 				final CloudFoundryClientDelegate cfClient = getCfClient(req);
 				final String username = cfClient.getFluxUser();
-				FluxClient.executor.execute(new Runnable() {
+				executor.execute(new Runnable() {
 					public void run() {
 						//From here on down work is lenghty and gets done async with any errors sent to the
 						// application log (via flux messages).

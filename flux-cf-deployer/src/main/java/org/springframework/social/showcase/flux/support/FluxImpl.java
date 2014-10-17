@@ -20,6 +20,7 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.social.github.api.GitHubUserProfile;
 import org.springframework.social.github.api.impl.GitHubTemplate;
+import org.eclipse.flux.client.config.SocketIOFluxConfig;
 
 /**
  * Trying to create a Flux connector similar to Github/Twitter etc connector in spring social.
@@ -89,11 +90,11 @@ public class FluxImpl implements Flux, DisposableBean {
 	@Override
 	public synchronized MessageConnector getMessagingConnector() throws Exception {
 		if (connector==null) {
-			this.connector = fluxClient.connect(
+			this.connector = fluxClient.connect(new SocketIOFluxConfig(
 					host,
 					getUsername(),
 					getAccessToken()
-			);
+			));
 			this.connector.connectToChannelSync(getUsername());
 		}
 		return connector;
