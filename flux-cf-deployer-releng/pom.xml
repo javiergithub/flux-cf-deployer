@@ -3,7 +3,6 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.eclipse.flux</groupId>
 	<artifactId>org.eclipse.flux.cf-deployer.releng</artifactId>
 	<packaging>pom</packaging>
 	<name>Flux Cf Deployer WebApp and Service</name>
