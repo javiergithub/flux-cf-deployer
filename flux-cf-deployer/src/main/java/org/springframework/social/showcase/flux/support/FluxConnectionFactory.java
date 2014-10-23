@@ -25,13 +25,13 @@ import org.springframework.social.connect.support.OAuth2ConnectionFactory;
 public class FluxConnectionFactory extends OAuth2ConnectionFactory<Flux> {
 
 	/**
-	 * Creates a factory for GitHub connections.
+	 * Creates a factory for Flux connections.
 	 * 
 	 * @param clientId client ID
 	 * @param clientSecret client secret
 	 */
-	public FluxConnectionFactory(String fluxHost, String clientId, String clientSecret) {
-		super("flux", new FluxServiceProvider(fluxHost, clientId, clientSecret), new FluxAdapter());
+	public FluxConnectionFactory(String rabbitURI, String socketIOHost, String clientId, String clientSecret) {
+		super("flux", new FluxServiceProvider(rabbitURI, socketIOHost, clientId, clientSecret), new FluxAdapter());
 	}
 
 }

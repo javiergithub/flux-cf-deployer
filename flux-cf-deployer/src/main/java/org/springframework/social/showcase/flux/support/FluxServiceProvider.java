@@ -15,6 +15,7 @@
  */
 package org.springframework.social.showcase.flux.support;
 
+import org.eclipse.flux.client.util.Assert;
 import org.springframework.social.oauth2.AbstractOAuth2ServiceProvider;
 import org.springframework.social.oauth2.OAuth2Template;
 
@@ -25,11 +26,14 @@ import org.springframework.social.oauth2.OAuth2Template;
  */
 public class FluxServiceProvider extends AbstractOAuth2ServiceProvider<Flux> {
 
-	private String fluxHost;
+	private String rabbitURI;
+	private String socketIOHost;
 
-	public FluxServiceProvider(String fluxHost, String clientId, String clientSecret) {
+	public FluxServiceProvider(String rabbitURI, String socketIOHost, String clientId, String clientSecret) {
 		super(createOAuth2Template(clientId, clientSecret));
-		this.fluxHost = fluxHost;
+		Assert.assertTrue(rabbitURI!=null);
+		this.rabbitURI = rabbitURI;
+		this.socketIOHost = socketIOHost;
 	}
 
 	private static OAuth2Template createOAuth2Template(String clientId, String clientSecret) {
@@ -39,7 +43,7 @@ public class FluxServiceProvider extends AbstractOAuth2ServiceProvider<Flux> {
 	}
 
 	public Flux getApi(String accessToken) {
-		return new FluxImpl(accessToken, fluxHost);
+		return new FluxImpl(accessToken, rabbitURI, socketIOHost);
 	} 
 
 }

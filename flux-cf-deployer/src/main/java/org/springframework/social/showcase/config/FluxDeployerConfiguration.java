@@ -19,6 +19,8 @@ package org.springframework.social.showcase.config;
 import javax.inject.Inject;
 import javax.sql.DataSource;
 
+import org.eclipse.flux.client.config.RabbitMQFluxConfig;
+import org.eclipse.flux.client.util.ExceptionUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
@@ -65,10 +67,15 @@ public class FluxDeployerConfiguration extends SocialConfigurerAdapter {
 
 	@Override
 	public void addConnectionFactories(ConnectionFactoryConfigurer connectionFactoryConfigurer, Environment env) {
-		connectionFactoryConfigurer.addConnectionFactory(new FluxConnectionFactory(
-				env.getRequiredProperty("cfd.flux.host"),
-				env.getRequiredProperty("cfd.flux.github.client.id"),
-				env.getRequiredProperty("cfd.flux.github.client.secret")));
+		try {
+			connectionFactoryConfigurer.addConnectionFactory(new FluxConnectionFactory(
+					RabbitMQFluxConfig.rabbitUrl(),
+					env.getRequiredProperty("cfd.flux.host"),
+					env.getRequiredProperty("cfd.flux.github.client.id"),
+					env.getRequiredProperty("cfd.flux.github.client.secret")));
+		} catch (Exception e) {
+			throw ExceptionUtil.unchecked(e);
+		}
 	}
 	
 	/**

@@ -21,6 +21,8 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.social.github.api.GitHubUserProfile;
 import org.springframework.social.github.api.impl.GitHubTemplate;
+import org.eclipse.flux.client.config.FluxConfig;
+import org.eclipse.flux.client.config.RabbitMQFluxConfig;
 import org.eclipse.flux.client.config.SocketIOFluxConfig;
 
 /**
@@ -37,13 +39,15 @@ public class FluxImpl implements Flux, DisposableBean {
 	private MessageConnector connector;
 	
 	private String username; // cached username (avoid rest request for github to fetch it each time
-	private String host;
+	private String rabbitUri;
+	private String socketIOHost;
 	private FluxClient fluxClient = FluxClient.DEFAULT_INSTANCE;
 
-	public FluxImpl(String accessToken, String host) {
+	public FluxImpl(String accessToken, String rabbitURI, String socketIOHost) {
 		this.accessToken = accessToken;
 		this.github = new GitHubTemplate(accessToken);
-		this.host = host;
+		this.socketIOHost = socketIOHost;
+		this.rabbitUri = rabbitURI;
 	}
 
 	@Override
@@ -90,14 +94,20 @@ public class FluxImpl implements Flux, DisposableBean {
 	@Override
 	public synchronized MessageConnector getMessagingConnector() throws Exception {
 		if (connector==null) {
-			this.connector = fluxClient.connect(new SocketIOFluxConfig(
-					host,
-					getUsername(),
-					getAccessToken()
-			));
+			this.connector = fluxClient.connect(fluxConfig());
 			this.connector.connectToChannelSync(getUsername());
 		}
 		return connector;
+	}
+
+	protected FluxConfig fluxConfig() {
+		return new RabbitMQFluxConfig(getUsername())
+		.setUri(rabbitUri)
+		.setSocketIOConf(new SocketIOFluxConfig(
+			socketIOHost,
+			getUsername(),
+			getAccessToken()
+		));
 	}
 
 	private String getUsername() {
@@ -115,7 +125,7 @@ public class FluxImpl implements Flux, DisposableBean {
 			c.disconnect();
 		}
 		accessToken = null;
-		host = null;
+		socketIOHost = null;
 		fluxClient= null;
 		github = null;
 		username = null;

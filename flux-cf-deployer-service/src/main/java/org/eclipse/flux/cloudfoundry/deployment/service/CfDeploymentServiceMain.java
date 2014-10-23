@@ -11,14 +11,14 @@
 package org.eclipse.flux.cloudfoundry.deployment.service;
 
 import org.eclipse.flux.client.FluxClient;
-import org.eclipse.flux.client.config.SocketIOFluxConfig;
+import org.eclipse.flux.client.config.RabbitMQFluxConfig;
 
 public class CfDeploymentServiceMain {
 
 	public static void main(String[] args) throws Exception {
 // This turns of socket.io logging:
 //		LogManager.getLogManager().reset();
-		CfDeploymentService instance = new CfDeploymentService(FluxClient.DEFAULT_INSTANCE, SocketIOFluxConfig.superConfig());
+		CfDeploymentService instance = new CfDeploymentService(FluxClient.DEFAULT_INSTANCE, RabbitMQFluxConfig.superConfig());
 		instance.start();
 	}
 }
