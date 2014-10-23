@@ -3,9 +3,7 @@ package org.eclipse.flux.cloudfoundry.deployment.service;
 import java.io.File;
 import java.io.StringWriter;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.cloudfoundry.client.lib.ApplicationLogListener;
 import org.cloudfoundry.client.lib.CloudCredentials;

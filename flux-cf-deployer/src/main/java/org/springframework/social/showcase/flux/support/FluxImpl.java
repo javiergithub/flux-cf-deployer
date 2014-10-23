@@ -15,6 +15,7 @@ import java.util.List;
 
 import org.eclipse.flux.client.FluxClient;
 import org.eclipse.flux.client.MessageConnector;
+import org.eclipse.flux.client.SingleResponseHandler;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.DisposableBean;
@@ -59,11 +60,10 @@ public class FluxImpl implements Flux, DisposableBean {
 		MessageConnector conn = getMessagingConnector();
 		SingleResponseHandler<List<String>> rh = new SingleResponseHandler<List<String>>(
 				getMessagingConnector(), 
-				GET_PROJECTS_RESPONSE,
-				getUsername()
+				GET_PROJECTS_RESPONSE
 		) {
 			@Override
-			protected List<String> parse(JSONObject message) throws Exception {
+			protected List<String> parse(String messageType, JSONObject message) throws Exception {
 				//Example message:
 				//{"projects":[
 				//		{"name":"bikok"},

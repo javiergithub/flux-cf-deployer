@@ -28,10 +28,10 @@ import org.cloudfoundry.client.lib.oauth2.JsonUtil;
 import org.cloudfoundry.client.lib.oauth2.OauthClient;
 import org.eclipse.flux.client.MessageConnector;
 import org.eclipse.flux.client.MessageConstants;
+import org.eclipse.flux.client.SingleResponseHandler;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.social.showcase.flux.support.Flux;
-import org.springframework.social.showcase.flux.support.SingleResponseHandler;
 import org.springframework.web.client.RestTemplate;
 
 public class CloudFoundry {
@@ -119,9 +119,9 @@ public class CloudFoundry {
 				.put(CF_CONTROLLER_URL, this.cloudControllerUrl.toString())
 				.put(CF_TOKEN, oauthClient.getToken().getValue());
 			System.out.println("msg = "+msg);
-			SingleResponseHandler<String[]> response = new SingleResponseHandler<String[]>(flux, CF_SPACES_RESPONSE, flux.getConfig().getUser()) {
+			SingleResponseHandler<String[]> response = new SingleResponseHandler<String[]>(flux, CF_SPACES_RESPONSE) {
 				@Override
-				protected String[] parse(JSONObject message) throws Exception {
+				protected String[] parse(String messageType, JSONObject message) throws Exception {
 					JSONArray _spaces = message.getJSONArray(CF_SPACES);
 					String[] spaces = new String[_spaces.length()];
 					for (int i = 0; i < spaces.length; i++) {
@@ -162,9 +162,9 @@ public class CloudFoundry {
 	}
 
 	public void push(MessageConnector flux, final DeploymentConfig config) throws Exception {
-		SingleResponseHandler<Void> response = new SingleResponseHandler<Void>(flux, MessageConstants.CF_PUSH_RESPONSE, flux.getConfig().getUser()) {
+		SingleResponseHandler<Void> response = new SingleResponseHandler<Void>(flux, MessageConstants.CF_PUSH_RESPONSE) {
 			@Override
-			protected Void parse(JSONObject message) throws Exception {
+			protected Void parse(String messageType, JSONObject message) throws Exception {
 				return null;
 			}
 		};

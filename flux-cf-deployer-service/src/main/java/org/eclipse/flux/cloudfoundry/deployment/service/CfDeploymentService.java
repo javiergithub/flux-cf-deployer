@@ -70,7 +70,7 @@ public class CfDeploymentService {
 		return null;
 	}
 
-	public void start() {
+	public void start() throws Exception {
 		this.flux = fluxClient.connect(fluxConf);
 		flux.connectToChannel(fluxConf.getUser());
 

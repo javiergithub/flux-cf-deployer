@@ -15,13 +15,7 @@ import org.eclipse.flux.client.config.SocketIOFluxConfig;
 
 public class CfDeploymentServiceMain {
 
-	/**
-	 * Launches the application. If command line arguments are present, the
-	 * first one is considered to be the Flux server URL.
-	 * 
-	 * @param args command line arguments
-	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 // This turns of socket.io logging:
 //		LogManager.getLogManager().reset();
 		CfDeploymentService instance = new CfDeploymentService(FluxClient.DEFAULT_INSTANCE, SocketIOFluxConfig.superConfig());
